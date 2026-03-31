@@ -315,5 +315,222 @@
         </div>
       </div>
     </div>
+
+    <!-- 新建单据模态框 -->
+    <div id="createDocModal" class="modal-overlay hidden" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="createDocTitle">
+        <div class="modal-head">
+          <div class="modal-head-left">
+            <div id="createDocTitle" class="modal-title">新建单据</div>
+            <div id="createDocSub" class="modal-sub">填写单据信息</div>
+          </div>
+          <button id="btnCreateDocClose" class="icon-btn" title="关闭">×</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-row">
+            <label class="form-label" for="docType">单据类型 <span class="required">*</span></label>
+            <select id="docType" class="form-control" required>
+              <option value="">请选择单据类型</option>
+              <option value="inbound">入库单</option>
+              <option value="outbound">出库单</option>
+              <option value="transfer">调拨单</option>
+              <option value="inventory">盘点单</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label" for="docDate">单据日期 <span class="required">*</span></label>
+            <input type="date" id="docDate" class="form-control" required>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label" for="docNumber">单据编号 <span class="required">*</span></label>
+            <input type="text" id="docNumber" class="form-control" placeholder="请输入单据编号" required>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label" for="supplier">供应商/客户</label>
+            <input type="text" id="supplier" class="form-control" placeholder="请输入供应商或客户名称">
+          </div>
+
+          <div class="form-row">
+            <label class="form-label" for="warehouse">仓库 <span class="required">*</span></label>
+            <select id="warehouse" class="form-control" required>
+              <option value="">请选择仓库</option>
+              <option value="warehouse1">总仓库</option>
+              <option value="warehouse2">分仓库A</option>
+              <option value="warehouse3">分仓库B</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label" for="docRemark">备注</label>
+            <textarea id="docRemark" class="form-control" rows="3" placeholder="请输入备注信息"></textarea>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label">商品明细</label>
+            <div class="table-container">
+              <table class="lines-table">
+                <thead>
+                  <tr>
+                    <th>商品编码</th>
+                    <th>商品名称</th>
+                    <th>规格型号</th>
+                    <th>数量 <span class="required">*</span></th>
+                    <th>单价 <span class="required">*</span></th>
+                    <th>金额</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="docItems">
+                  <tr>
+                    <td><input type="text" class="line-input" placeholder="商品编码" required></td>
+                    <td><input type="text" class="line-input" placeholder="商品名称" required></td>
+                    <td><input type="text" class="line-input" placeholder="规格型号"></td>
+                    <td><input type="number" class="line-input" placeholder="数量" step="0.01" min="0" required></td>
+                    <td><input type="number" class="line-input" placeholder="单价" step="0.01" min="0" required></td>
+                    <td><input type="number" class="line-input" placeholder="金额" step="0.01" min="0" readonly></td>
+                    <td><button type="button" class="small-btn danger">删除</button></td>
+                  </tr>
+                </tbody>
+              </table>
+              <button type="button" id="addItemBtn" class="btn primary" style="margin-top: 10px;">添加商品</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-foot">
+          <button id="btnCreateDocCancel" class="btn">取消</button>
+          <button id="btnCreateDocSubmit" class="btn primary">提交</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 导入模态框 -->
+    <div id="importModal" class="modal-overlay hidden" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+        <div class="modal-head">
+          <div class="modal-head-left">
+            <div id="importTitle" class="modal-title">导入数据</div>
+            <div id="importSub" class="modal-sub">上传文件并导入数据</div>
+          </div>
+          <button id="btnImportClose" class="icon-btn" title="关闭">×</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-row">
+            <label class="form-label" for="importType">导入类型 <span class="required">*</span></label>
+            <select id="importType" class="form-control" required>
+              <option value="">请选择导入类型</option>
+              <option value="goods">商品数据</option>
+              <option value="supplier">供应商数据</option>
+              <option value="customer">客户数据</option>
+              <option value="inventory">库存数据</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label" for="importFile">上传文件 <span class="required">*</span></label>
+            <div class="file-upload">
+              <input type="file" id="importFile" class="form-control" accept=".xlsx,.xls,.csv" required>
+              <div class="file-info" id="fileInfo">未选择文件</div>
+              <div class="file-hint">支持Excel (.xlsx, .xls) 和 CSV (.csv) 文件</div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label">导入选项</label>
+            <div class="checkbox-group">
+              <label><input type="checkbox" id="overrideData"> 覆盖现有数据</label>
+              <label><input type="checkbox" id="validateData" checked> 启用数据验证</label>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label">导入预览</label>
+            <div class="preview-container" id="importPreview">
+              <div class="preview-placeholder">上传文件后将显示数据预览</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-foot">
+          <button id="btnImportCancel" class="btn">取消</button>
+          <button id="btnImportSubmit" class="btn primary">开始导入</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 导出模态框 -->
+    <div id="exportModal" class="modal-overlay hidden" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="exportTitle">
+        <div class="modal-head">
+          <div class="modal-head-left">
+            <div id="exportTitle" class="modal-title">导出数据</div>
+            <div id="exportSub" class="modal-sub">选择导出选项</div>
+          </div>
+          <button id="btnExportClose" class="icon-btn" title="关闭">×</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-row">
+            <label class="form-label" for="exportType">导出类型 <span class="required">*</span></label>
+            <select id="exportType" class="form-control" required>
+              <option value="">请选择导出类型</option>
+              <option value="goods">商品数据</option>
+              <option value="supplier">供应商数据</option>
+              <option value="customer">客户数据</option>
+              <option value="inventory">库存数据</option>
+              <option value="docs">单据数据</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label" for="exportFormat">文件格式 <span class="required">*</span></label>
+            <select id="exportFormat" class="form-control" required>
+              <option value="">请选择文件格式</option>
+              <option value="xlsx">Excel (.xlsx)</option>
+              <option value="csv">CSV (.csv)</option>
+              <option value="pdf">PDF (.pdf)</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label">导出范围</label>
+            <div class="radio-group">
+              <label><input type="radio" name="exportRange" value="all" checked> 全部数据</label>
+              <label><input type="radio" name="exportRange" value="filtered"> 筛选后数据</label>
+              <label><input type="radio" name="exportRange" value="selected"> 选中数据</label>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label">导出字段</label>
+            <div class="checkbox-group" id="exportFields">
+              <label><input type="checkbox" name="exportField" value="code" checked> 编码</label>
+              <label><input type="checkbox" name="exportField" value="name" checked> 名称</label>
+              <label><input type="checkbox" name="exportField" value="spec" checked> 规格型号</label>
+              <label><input type="checkbox" name="exportField" value="quantity" checked> 数量</label>
+              <label><input type="checkbox" name="exportField" value="price" checked> 单价</label>
+              <label><input type="checkbox" name="exportField" value="amount" checked> 金额</label>
+              <label><input type="checkbox" name="exportField" value="date" checked> 日期</label>
+              <label><input type="checkbox" name="exportField" value="status" checked> 状态</label>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label" for="exportFilename">文件名 <span class="required">*</span></label>
+            <input type="text" id="exportFilename" class="form-control" placeholder="请输入文件名" required>
+          </div>
+        </div>
+
+        <div class="modal-foot">
+          <button id="btnExportCancel" class="btn">取消</button>
+          <button id="btnExportSubmit" class="btn primary">开始导出</button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

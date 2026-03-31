@@ -834,6 +834,137 @@ body {
   box-shadow: 0 0 0 2px rgba(22, 131, 255, 0.2);
 }
 
+/* 新建单据、导入导出样式 */
+.required {
+  color: var(--pink);
+  margin-left: 4px;
+}
+
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.lines-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+}
+
+.lines-table th,
+.lines-table td {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.lines-table th {
+  background: #f9f9f9;
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.lines-table td {
+  vertical-align: middle;
+}
+
+.line-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.line-input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(22, 131, 255, 0.2);
+}
+
+.file-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-info {
+  font-size: 14px;
+  color: var(--muted);
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #f9f9f9;
+}
+
+.file-hint {
+  font-size: 12px;
+  color: var(--muted2);
+}
+
+.checkbox-group,
+.radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+
+.checkbox-group label,
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.checkbox-group input[type="checkbox"],
+.radio-group input[type="radio"] {
+  width: auto;
+  margin: 0;
+}
+
+.preview-container {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px;
+  min-height: 200px;
+  background: #f9f9f9;
+  overflow: auto;
+}
+
+.preview-placeholder {
+  text-align: center;
+  color: var(--muted);
+  padding: 40px 0;
+}
+
+.form-control[type="date"] {
+  padding: 8px 12px;
+}
+
+.form-control[type="file"] {
+  padding: 6px;
+}
+
+textarea.form-control {
+  resize: vertical;
+  min-height: 80px;
+}
+
+#exportFields {
+  max-height: 160px;
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: white;
+}
+
 .modal-foot {
   padding: 16px 20px;
   display: flex;

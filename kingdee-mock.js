@@ -846,6 +846,359 @@
     // 不清空日志
   }
 
+  // 新建单据功能
+  function openCreateDocModal() {
+    const modal = document.getElementById('createDocModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.setAttribute('aria-hidden', 'false');
+      // 设置默认日期为今天
+      const today = new Date().toISOString().split('T')[0];
+      const docDate = document.getElementById('docDate');
+      if (docDate) {
+        docDate.value = today;
+      }
+      // 生成默认单据编号
+      const docNumber = document.getElementById('docNumber');
+      if (docNumber) {
+        const moduleName = state.moduleKey === 'inventory' ? 'RK' : 
+                         state.moduleKey === 'sales' ? 'XS' : 
+                         state.moduleKey === 'procurement' ? 'CG' : 'DJ';
+        const dateStr = today.replace(/-/g, '');
+        const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+        docNumber.value = `${moduleName}${dateStr}${randomNum}`;
+      }
+    }
+  }
+
+  function closeCreateDocModal() {
+    const modal = document.getElementById('createDocModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function addDocItem() {
+    const docItems = document.getElementById('docItems');
+    if (docItems) {
+      const newRow = document.createElement('tr');
+      newRow.innerHTML = `
+        <td><input type="text" class="line-input" placeholder="商品编码" required></td>
+        <td><input type="text" class="line-input" placeholder="商品名称" required></td>
+        <td><input type="text" class="line-input" placeholder="规格型号"></td>
+        <td><input type="number" class="line-input" placeholder="数量" step="0.01" min="0" required></td>
+        <td><input type="number" class="line-input" placeholder="单价" step="0.01" min="0" required></td>
+        <td><input type="number" class="line-input" placeholder="金额" step="0.01" min="0" readonly></td>
+        <td><button type="button" class="small-btn danger">删除</button></td>
+      `;
+      docItems.appendChild(newRow);
+      // 添加删除按钮事件
+      addDeleteItemEvents();
+      // 添加计算金额事件
+      addCalculateAmountEvents();
+    }
+  }
+
+  function addDeleteItemEvents() {
+    const deleteButtons = document.querySelectorAll('#docItems .small-btn.danger');
+    deleteButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const row = this.closest('tr');
+        if (row) {
+          row.remove();
+        }
+      });
+    });
+  }
+
+  function addCalculateAmountEvents() {
+    const quantityInputs = document.querySelectorAll('#docItems input[placeholder="数量"]');
+    const priceInputs = document.querySelectorAll('#docItems input[placeholder="单价"]');
+    
+    function calculateAmount(row) {
+      const quantityInput = row.querySelector('input[placeholder="数量"]');
+      const priceInput = row.querySelector('input[placeholder="单价"]');
+      const amountInput = row.querySelector('input[placeholder="金额"]');
+      
+      if (quantityInput && priceInput && amountInput) {
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const price = parseFloat(priceInput.value) || 0;
+        const amount = quantity * price;
+        amountInput.value = amount.toFixed(2);
+      }
+    }
+    
+    quantityInputs.forEach(input => {
+      input.addEventListener('input', function() {
+        const row = this.closest('tr');
+        calculateAmount(row);
+      });
+    });
+    
+    priceInputs.forEach(input => {
+      input.addEventListener('input', function() {
+        const row = this.closest('tr');
+        calculateAmount(row);
+      });
+    });
+  }
+
+  function submitCreateDoc() {
+    // 表单验证
+    const docType = document.getElementById('docType');
+    const docDate = document.getElementById('docDate');
+    const docNumber = document.getElementById('docNumber');
+    const warehouse = document.getElementById('warehouse');
+    const docItems = document.getElementById('docItems');
+    
+    if (!docType.value) {
+      alert('请选择单据类型');
+      docType.focus();
+      return;
+    }
+    
+    if (!docDate.value) {
+      alert('请选择单据日期');
+      docDate.focus();
+      return;
+    }
+    
+    if (!docNumber.value) {
+      alert('请输入单据编号');
+      docNumber.focus();
+      return;
+    }
+    
+    if (!warehouse.value) {
+      alert('请选择仓库');
+      warehouse.focus();
+      return;
+    }
+    
+    // 验证商品明细
+    const itemRows = docItems.querySelectorAll('tr');
+    if (itemRows.length === 0) {
+      alert('请添加商品明细');
+      return;
+    }
+    
+    let hasValidItems = false;
+    itemRows.forEach(row => {
+      const codeInput = row.querySelector('input[placeholder="商品编码"]');
+      const nameInput = row.querySelector('input[placeholder="商品名称"]');
+      const quantityInput = row.querySelector('input[placeholder="数量"]');
+      const priceInput = row.querySelector('input[placeholder="单价"]');
+      
+      if (codeInput.value && nameInput.value && quantityInput.value && priceInput.value) {
+        hasValidItems = true;
+      }
+    });
+    
+    if (!hasValidItems) {
+      alert('请填写完整的商品明细');
+      return;
+    }
+    
+    // 提交确认
+    if (confirm('确定要提交单据吗？')) {
+      // 模拟提交成功
+      logLine('OK', `新建${docType.options[docType.selectedIndex].text}成功：${docNumber.value}`);
+      closeCreateDocModal();
+      
+      // 显示成功提示
+      alert('单据提交成功！');
+    }
+  }
+
+  // 导入功能
+  function openImportModal() {
+    const modal = document.getElementById('importModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.setAttribute('aria-hidden', 'false');
+      // 重置表单
+      document.getElementById('importType').value = '';
+      document.getElementById('importFile').value = '';
+      document.getElementById('fileInfo').textContent = '未选择文件';
+      document.getElementById('overrideData').checked = false;
+      document.getElementById('validateData').checked = true;
+      document.getElementById('importPreview').innerHTML = '<div class="preview-placeholder">上传文件后将显示数据预览</div>';
+    }
+  }
+
+  function closeImportModal() {
+    const modal = document.getElementById('importModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function handleFileUpload(e) {
+    const file = e.target.files[0];
+    if (file) {
+      const fileInfo = document.getElementById('fileInfo');
+      if (fileInfo) {
+        fileInfo.textContent = file.name;
+      }
+      
+      // 模拟文件预览
+      const importPreview = document.getElementById('importPreview');
+      if (importPreview) {
+        importPreview.innerHTML = `
+          <div class="preview-content">
+            <h4>文件预览</h4>
+            <p>文件名：${file.name}</p>
+            <p>文件大小：${(file.size / 1024).toFixed(2)} KB</p>
+            <p>文件类型：${file.type}</p>
+            <div class="preview-table">
+              <table class="lines-table">
+                <thead>
+                  <tr>
+                    <th>编码</th>
+                    <th>名称</th>
+                    <th>规格</th>
+                    <th>数量</th>
+                    <th>单价</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>001</td>
+                    <td>商品1</td>
+                    <td>标准</td>
+                    <td>100</td>
+                    <td>10.00</td>
+                  </tr>
+                  <tr>
+                    <td>002</td>
+                    <td>商品2</td>
+                    <td>豪华</td>
+                    <td>50</td>
+                    <td>20.00</td>
+                  </tr>
+                  <tr>
+                    <td>003</td>
+                    <td>商品3</td>
+                    <td>经济</td>
+                    <td>200</td>
+                    <td>5.00</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+    }
+  }
+
+  function submitImport() {
+    const importType = document.getElementById('importType');
+    const importFile = document.getElementById('importFile');
+    
+    if (!importType.value) {
+      alert('请选择导入类型');
+      importType.focus();
+      return;
+    }
+    
+    if (!importFile.files.length) {
+      alert('请选择要导入的文件');
+      importFile.focus();
+      return;
+    }
+    
+    // 模拟导入过程
+    logLine('INFO', `开始导入${importType.options[importType.selectedIndex].text}`);
+    
+    // 模拟导入成功
+    setTimeout(() => {
+      logLine('OK', `导入${importType.options[importType.selectedIndex].text}成功，共导入3条记录`);
+      closeImportModal();
+      alert('导入成功！');
+    }, 1500);
+  }
+
+  // 导出功能
+  function openExportModal() {
+    const modal = document.getElementById('exportModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.setAttribute('aria-hidden', 'false');
+      // 重置表单
+      document.getElementById('exportType').value = '';
+      document.getElementById('exportFormat').value = '';
+      document.querySelector('input[name="exportRange"][value="all"]').checked = true;
+      document.querySelectorAll('input[name="exportField"]').forEach(checkbox => {
+        checkbox.checked = true;
+      });
+      // 生成默认文件名
+      const today = new Date().toISOString().split('T')[0];
+      const exportFilename = document.getElementById('exportFilename');
+      if (exportFilename) {
+        exportFilename.value = `${state.moduleKey}_export_${today}`;
+      }
+    }
+  }
+
+  function closeExportModal() {
+    const modal = document.getElementById('exportModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function submitExport() {
+    const exportType = document.getElementById('exportType');
+    const exportFormat = document.getElementById('exportFormat');
+    const exportFilename = document.getElementById('exportFilename');
+    
+    if (!exportType.value) {
+      alert('请选择导出类型');
+      exportType.focus();
+      return;
+    }
+    
+    if (!exportFormat.value) {
+      alert('请选择文件格式');
+      exportFormat.focus();
+      return;
+    }
+    
+    if (!exportFilename.value) {
+      alert('请输入文件名');
+      exportFilename.focus();
+      return;
+    }
+    
+    // 获取选中的导出字段
+    const selectedFields = [];
+    document.querySelectorAll('input[name="exportField"]:checked').forEach(checkbox => {
+      selectedFields.push(checkbox.value);
+    });
+    
+    if (selectedFields.length === 0) {
+      alert('请至少选择一个导出字段');
+      return;
+    }
+    
+    // 获取导出范围
+    const exportRange = document.querySelector('input[name="exportRange"]:checked').value;
+    
+    // 模拟导出过程
+    logLine('INFO', `开始导出${exportType.options[exportType.selectedIndex].text}，格式：${exportFormat.options[exportFormat.selectedIndex].text}`);
+    
+    // 模拟导出成功
+    setTimeout(() => {
+      logLine('OK', `导出${exportType.options[exportType.selectedIndex].text}成功，文件：${exportFilename.value}.${exportFormat.value}`);
+      closeExportModal();
+      alert('导出成功！文件已下载。');
+    }, 1500);
+  }
+
   function readModalForm() {
     const category = TILE_TYPE_TO_CATEGORY[modalTile.type] || "generic";
     const opMode = opModeSel.value;
@@ -1022,6 +1375,93 @@
         logLine("INFO", `切换模块：${mod ? mod.label : key}`);
       });
     });
+    
+    // 页面操作按钮事件
+    const createDocBtn = document.querySelector('.page-actions .btn.primary');
+    const importBtn = document.querySelectorAll('.page-actions .btn')[1];
+    const exportBtn = document.querySelectorAll('.page-actions .btn')[2];
+    
+    if (createDocBtn) {
+      createDocBtn.addEventListener('click', openCreateDocModal);
+    }
+    
+    if (importBtn) {
+      importBtn.addEventListener('click', openImportModal);
+    }
+    
+    if (exportBtn) {
+      exportBtn.addEventListener('click', openExportModal);
+    }
+    
+    // 新建单据模态框事件
+    const createDocModal = document.getElementById('createDocModal');
+    const btnCreateDocClose = document.getElementById('btnCreateDocClose');
+    const btnCreateDocCancel = document.getElementById('btnCreateDocCancel');
+    const btnCreateDocSubmit = document.getElementById('btnCreateDocSubmit');
+    const addItemBtn = document.getElementById('addItemBtn');
+    
+    if (btnCreateDocClose) {
+      btnCreateDocClose.addEventListener('click', closeCreateDocModal);
+    }
+    
+    if (btnCreateDocCancel) {
+      btnCreateDocCancel.addEventListener('click', closeCreateDocModal);
+    }
+    
+    if (btnCreateDocSubmit) {
+      btnCreateDocSubmit.addEventListener('click', submitCreateDoc);
+    }
+    
+    if (addItemBtn) {
+      addItemBtn.addEventListener('click', addDocItem);
+    }
+    
+    // 导入模态框事件
+    const importModal = document.getElementById('importModal');
+    const btnImportClose = document.getElementById('btnImportClose');
+    const btnImportCancel = document.getElementById('btnImportCancel');
+    const btnImportSubmit = document.getElementById('btnImportSubmit');
+    const importFile = document.getElementById('importFile');
+    
+    if (btnImportClose) {
+      btnImportClose.addEventListener('click', closeImportModal);
+    }
+    
+    if (btnImportCancel) {
+      btnImportCancel.addEventListener('click', closeImportModal);
+    }
+    
+    if (btnImportSubmit) {
+      btnImportSubmit.addEventListener('click', submitImport);
+    }
+    
+    if (importFile) {
+      importFile.addEventListener('change', handleFileUpload);
+    }
+    
+    // 导出模态框事件
+    const exportModal = document.getElementById('exportModal');
+    const btnExportClose = document.getElementById('btnExportClose');
+    const btnExportCancel = document.getElementById('btnExportCancel');
+    const btnExportSubmit = document.getElementById('btnExportSubmit');
+    
+    if (btnExportClose) {
+      btnExportClose.addEventListener('click', closeExportModal);
+    }
+    
+    if (btnExportCancel) {
+      btnExportCancel.addEventListener('click', closeExportModal);
+    }
+    
+    if (btnExportSubmit) {
+      btnExportSubmit.addEventListener('click', submitExport);
+    }
+    
+    // 为现有商品行添加删除按钮事件
+    addDeleteItemEvents();
+    
+    // 为数量和单价输入框添加计算金额事件
+    addCalculateAmountEvents();
     
     // 初始化时激活库存管理
     const inventoryItem = $(".side-item[data-module='inventory']");
