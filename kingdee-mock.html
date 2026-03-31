@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>金蝶云·星空 - 企业管理系统</title>
+    <link rel="stylesheet" href="./kingdee-mock.css" />
+    <script src="./kingdee-mock.js" defer></script>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo">
+            <strong>金蝶云·星空</strong>
+          </div>
+        </div>
+        <div class="sidebar-menu">
+          <div class="menu-section">
+            <div class="section-title">快捷应用</div>
+            <div class="side-item" data-module="dashboard">
+              <i class="icon">🏠</i>
+              <span>首页</span>
+            </div>
+            <div class="side-item" data-module="customer">
+              <i class="icon">👥</i>
+              <span>客户管理</span>
+            </div>
+            <div class="side-item" data-module="sales">
+              <i class="icon">💰</i>
+              <span>销售管理</span>
+            </div>
+            <div class="side-item" data-module="procurement">
+              <i class="icon">🛒</i>
+              <span>采购管理</span>
+            </div>
+            <div class="side-item" data-module="inventory">
+              <i class="icon">📦</i>
+              <span>库存管理</span>
+            </div>
+          </div>
+          <div class="menu-section">
+            <div class="section-title">财务管理</div>
+            <div class="side-item" data-module="finance">
+              <i class="icon">📊</i>
+              <span>应收应付</span>
+            </div>
+            <div class="side-item" data-module="cost">
+              <i class="icon">💰</i>
+              <span>成本管理</span>
+            </div>
+            <div class="side-item" data-module="asset">
+              <i class="icon">🏢</i>
+              <span>资产管理</span>
+            </div>
+            <div class="side-item" data-module="mgmt">
+              <i class="icon">📈</i>
+              <span>管理会计</span>
+            </div>
+          </div>
+          <div class="menu-section">
+            <div class="section-title">生产制造</div>
+            <div class="side-item" data-module="manufacturing">
+              <i class="icon">🏭</i>
+              <span>生产制造</span>
+            </div>
+            <div class="side-item" data-module="quality">
+              <i class="icon">✅</i>
+              <span>质量管理</span>
+            </div>
+          </div>
+          <div class="menu-section">
+            <div class="section-title">供应链</div>
+            <div class="side-item" data-module="supply">
+              <i class="icon">🔄</i>
+              <span>供应链</span>
+            </div>
+            <div class="side-item" data-module="ecommerce">
+              <i class="icon">🛍️</i>
+              <span>电商与分销</span>
+            </div>
+          </div>
+          <div class="menu-section">
+            <div class="section-title">系统设置</div>
+            <div class="side-item" data-module="masterdata">
+              <i class="icon">⚙️</i>
+              <span>基础资料</span>
+            </div>
+            <div class="side-item" data-module="plm">
+              <i class="icon">📋</i>
+              <span>PLM</span>
+            </div>
+            <div class="side-item" data-module="oa">
+              <i class="icon">📎</i>
+              <span>协同办公</span>
+            </div>
+            <div class="side-item" data-module="system">
+              <i class="icon">🔧</i>
+              <span>系统设置</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="content">
+        <header class="content-header">
+          <div class="header-top">
+            <div class="header-left">
+              <div class="breadcrumb">
+                <a href="javascript:void(0)">首页</a> &gt; <span id="breadcrumbModule">库存管理</span>
+              </div>
+            </div>
+            <div class="header-right">
+              <div class="search-box">
+                <input id="searchInput" type="text" placeholder="搜索功能、数据..." aria-label="搜索功能和数据" />
+                <span>搜索</span>
+                <div id="searchDropdown" class="search-dropdown hidden"></div>
+              </div>
+              <div class="user-info">
+                <span>管理员</span>
+                <div class="avatar"></div>
+              </div>
+            </div>
+          </div>
+          <div class="header-bottom">
+            <div class="page-title">
+              <h1>库存管理</h1>
+              <p>本页为前端静态模拟，可点击演示“入库/出库/调拨”等流程</p>
+            </div>
+            <div class="page-actions">
+              <button class="btn primary">新建单据</button>
+              <button class="btn">导入</button>
+              <button class="btn">导出</button>
+            </div>
+          </div>
+        </header>
+
+        <div class="dashboard-content">
+          <!-- 快速发起 -->
+          <div class="section">
+            <h2 class="section-title">快速发起</h2>
+            <div class="quick-actions">
+              <div class="quick-action-card">
+                <div class="icon pink">📥</div>
+                <div class="title">其他入库</div>
+              </div>
+              <div class="quick-action-card">
+                <div class="icon blue">📤</div>
+                <div class="title">其他出库</div>
+              </div>
+              <div class="quick-action-card">
+                <div class="icon orange">🔄</div>
+                <div class="title">移仓单</div>
+              </div>
+              <div class="quick-action-card">
+                <div class="icon blue-dark">📋</div>
+                <div class="title">调拨出库</div>
+              </div>
+              <div class="quick-action-card">
+                <div class="icon pink">📥</div>
+                <div class="title">调拨入库</div>
+              </div>
+              <div class="quick-action-card">
+                <div class="icon gray">📝</div>
+                <div class="title">调拨差异处理</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 待办事项 -->
+          <div class="section">
+            <h2 class="section-title">待办</h2>
+            <div class="todo-tabs">
+              <button class="tab-btn active">待办</button>
+              <button class="tab-btn">生产</button>
+              <button class="tab-btn">仓库</button>
+              <button class="tab-btn">全部</button>
+            </div>
+            <div class="todo-cards">
+              <div class="todo-card">
+                <div class="todo-icon">📋</div>
+                <div class="todo-content">
+                  <div class="todo-title">其他出库待审核</div>
+                  <div class="todo-count">0</div>
+                </div>
+              </div>
+              <div class="todo-card">
+                <div class="todo-icon">📋</div>
+                <div class="todo-content">
+                  <div class="todo-title">其他入库待审核</div>
+                  <div class="todo-count">0</div>
+                </div>
+              </div>
+              <div class="todo-card">
+                <div class="todo-icon">📋</div>
+                <div class="todo-content">
+                  <div class="todo-title">盘点单未完成</div>
+                  <div class="todo-count">0</div>
+                </div>
+              </div>
+              <div class="todo-card">
+                <div class="todo-icon">📋</div>
+                <div class="todo-content">
+                  <div class="todo-title">调拨出库待审核</div>
+                  <div class="todo-count">0</div>
+                </div>
+              </div>
+              <div class="todo-card">
+                <div class="todo-icon">📋</div>
+                <div class="todo-content">
+                  <div class="todo-title">调拨入库待审核</div>
+                  <div class="todo-count">0</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 实时数据 -->
+          <div class="section">
+            <h2 class="section-title">实时数据</h2>
+            <div class="data-tabs">
+              <button class="tab-btn active">本日</button>
+              <button class="tab-btn">本月</button>
+            </div>
+            <div class="data-cards">
+              <div class="data-card">
+                <div class="data-icon green">📥</div>
+                <div class="data-content">
+                  <div class="data-label">采购入库</div>
+                  <div class="data-value">0.00</div>
+                </div>
+              </div>
+              <div class="data-card">
+                <div class="data-icon blue">📤</div>
+                <div class="data-content">
+                  <div class="data-label">销售出库</div>
+                  <div class="data-value">0.00</div>
+                </div>
+              </div>
+              <div class="data-card">
+                <div class="data-icon red">🔄</div>
+                <div class="data-content">
+                  <div class="data-label">销售退货</div>
+                  <div class="data-value">0.00</div>
+                </div>
+              </div>
+              <div class="data-card">
+                <div class="data-icon green">👥</div>
+                <div class="data-content">
+                  <div class="data-label">新增客户</div>
+                  <div class="data-value">0</div>
+                </div>
+              </div>
+              <div class="data-card">
+                <div class="data-icon blue">📊</div>
+                <div class="data-content">
+                  <div class="data-label">经营日报</div>
+                  <div class="data-action">查看</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 功能卡片区域 -->
+          <div class="section">
+            <h2 class="section-title">功能列表</h2>
+            <div id="tilesArea" aria-label="tiles area"></div>
+          </div>
+
+          <!-- 操作日志 -->
+          <div class="section">
+            <h2 class="section-title">操作日志</h2>
+            <div class="ops">
+              <div class="ops-head">
+                <div>
+                  <div class="ops-sub">点击功能卡片后，提交表单将生成模拟执行记录</div>
+                </div>
+                <div class="ops-actions">
+                  <button id="btnCopyLog" class="small-btn">复制</button>
+                  <button id="btnExportLog" class="small-btn">导出</button>
+                  <button id="btnClearLog" class="small-btn danger">清空</button>
+                </div>
+              </div>
+              <div id="opsLog" class="ops-log" role="log" aria-live="polite"></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- modal -->
+    <div id="modalOverlay" class="modal-overlay hidden" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-head">
+          <div class="modal-head-left">
+            <div id="modalTitle" class="modal-title">功能名称</div>
+            <div id="modalSub" class="modal-sub">这里是模拟表单</div>
+          </div>
+          <button id="btnModalClose" class="icon-btn" title="关闭">×</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-row">
+            <label class="form-label" for="opMode">操作方式</label>
+            <select id="opMode" class="form-control"></select>
+          </div>
+
+          <div id="formFields" class="form-fields"></div>
+        </div>
+
+        <div class="modal-foot">
+          <button id="btnCancel" class="btn">取消</button>
+          <button id="btnExecute" class="btn primary">执行（模拟）</button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

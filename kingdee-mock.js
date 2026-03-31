@@ -111,7 +111,7 @@
           tiles: [
             { label: "受托加工材料入库单", type: "commission_material_in", keywords: ["委托加工", "入库"] },
             { label: "受托加工材料出库单", type: "commission_material_out", keywords: ["委托加工", "出库"] },
-            { label: "受托加工材料出库单", type: "commission_material_ship", keywords: ["委托加工", "出库"] },
+            { label: "委托加工材料发运单", type: "commission_material_ship", keywords: ["委托加工", "发运"] },
             { label: "受托加工材料入库单", type: "commission_material_return", keywords: ["委托加工", "入库"] },
           ],
         },
@@ -555,7 +555,6 @@
           star.className = "star";
           star.textContent = "★";
           tile.appendChild(star);
-          tile.lastChild && tile.lastChild; // noop
         }
         tile.addEventListener("click", () => openModalForTile(t));
         tile.addEventListener("keydown", (e) => {
