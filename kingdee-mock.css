@@ -135,6 +135,30 @@ body {
   margin-bottom: 16px;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mobile-menu-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--text);
+  display: none;
+  transition: all 0.2s;
+}
+
+.mobile-menu-btn:hover {
+  background: #f0f7ff;
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
 .breadcrumb {
   font-size: 14px;
   color: var(--muted);
@@ -987,24 +1011,38 @@ body {
 
 @media (max-width: 768px) {
   .sidebar {
-    width: 64px;
+    position: fixed;
+    left: -220px;
+    top: 0;
+    height: 100vh;
+    z-index: 1001;
+    transition: left 0.3s ease;
+    width: 220px;
+  }
+  
+  .sidebar.mobile-open {
+    left: 0;
   }
   
   .sidebar-header .logo {
-    font-size: 14px;
-    text-align: center;
+    font-size: 16px;
+    text-align: left;
   }
   
   .side-item span {
-    display: none;
+    display: block;
   }
   
   .side-item .icon {
-    margin-right: 0;
+    margin-right: 12px;
   }
   
   .section-title {
-    display: none;
+    display: block;
+  }
+  
+  .mobile-menu-btn {
+    display: block;
   }
   
   .header-top {
@@ -1013,13 +1051,23 @@ body {
     gap: 12px;
   }
   
+  .header-left {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
   .header-right {
     width: 100%;
     justify-content: space-between;
   }
   
   .search-box {
-    width: 200px;
+    flex: 1;
+    margin-right: 10px;
+  }
+  
+  .user-name {
+    display: none;
   }
   
   .header-bottom {
@@ -1034,19 +1082,39 @@ body {
   }
   
   .quick-actions {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .quick-action-card {
+    padding: 16px;
   }
   
   .todo-cards {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
   
   .data-cards {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .data-card {
+    padding: 16px;
   }
   
   .tile-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .dashboard-content {
+    padding: 16px;
+  }
+  
+  .section {
+    margin-bottom: 24px;
   }
   
   .doc-grid {
@@ -1063,6 +1131,87 @@ body {
   
   .field {
     grid-template-columns: 90px 1fr;
+  }
+  
+  .modal {
+    width: calc(100vw - 20px);
+    margin: 10px;
+  }
+  
+  .modal-body {
+    padding: 16px;
+  }
+  
+  .modal-foot {
+    padding: 12px 16px;
+  }
+  
+  .ops-log {
+    height: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .quick-actions {
+    grid-template-columns: 1fr;
+  }
+  
+  .data-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .tile-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .page-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .btn {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .header-right {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  .search-box {
+    width: 100%;
+    margin-right: 0;
+  }
+  
+  .user-info {
+    align-self: flex-end;
+  }
+  
+  .breadcrumb {
+    font-size: 12px;
+  }
+  
+  .page-title h1 {
+    font-size: 18px;
+  }
+  
+  .page-title p {
+    font-size: 12px;
+  }
+  
+  .todo-card {
+    padding: 12px;
+  }
+  
+  .data-card {
+    padding: 12px;
+  }
+  
+  .tile {
+    padding: 12px;
   }
 }
 

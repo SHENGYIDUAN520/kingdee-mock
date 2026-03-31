@@ -973,6 +973,23 @@
   }
 
   function wireEvents() {
+    // 移动端菜单按钮点击事件
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const sidebar = document.querySelector('.sidebar');
+    
+    if (mobileMenuBtn && sidebar) {
+      mobileMenuBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('mobile-open');
+      });
+      
+      // 点击侧边栏外部关闭侧边栏
+      document.addEventListener('click', (e) => {
+        if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target) && sidebar.classList.contains('mobile-open')) {
+          sidebar.classList.remove('mobile-open');
+        }
+      });
+    }
+    
     // sidebar
     $$(".side-item").forEach((item) => {
       item.addEventListener("click", (e) => {
@@ -992,6 +1009,11 @@
         
         // 激活当前点击的菜单项
         item.classList.add("active");
+        
+        // 在移动设备上点击菜单项后关闭侧边栏
+        if (window.innerWidth <= 768) {
+          sidebar.classList.remove('mobile-open');
+        }
         
         syncHeader();
         renderTiles();
