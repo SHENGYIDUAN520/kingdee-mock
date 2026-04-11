@@ -179,6 +179,8 @@
   })();
 
   let sidebarOpen = false;
+  const mqDrawerSidebar = window.matchMedia("(max-width: 900px)");
+  let sidebarMqWired = false;
   let paletteOpen = false;
   let paletteQuery = "";
   let paletteIndex = 0;
@@ -928,7 +930,7 @@
       <div class="drawer-backdrop" id="drawer-backdrop" aria-hidden="true"></div>
       <div class="main">
         <header class="topbar">
-          <button type="button" class="menu-toggle" id="menu-toggle" aria-label="打开菜单">${ICONS.menu}</button>
+          <button type="button" class="menu-toggle" id="menu-toggle" aria-label="打开菜单" aria-expanded="false" aria-controls="sidebar">${ICONS.menu}</button>
           <div class="org-select-wrap">
             <label for="org-select">组织</label>
             <select id="org-select" class="input org-select" aria-label="切换组织">${orgOptions}</select>
@@ -1155,6 +1157,7 @@
   };
 
   const mount = () => {
+    sidebarOpen = false;
     initOverlaysOnce();
     document.documentElement.dataset.theme = state.theme;
     document.documentElement.dataset.tableDensity = state.tableDensity === "compact" ? "compact" : "comfortable";
@@ -1184,6 +1187,28 @@
     }
   };
 
+  const syncSidebarA11y = () => {
+    const toggle = document.getElementById("menu-toggle");
+    const sidebar = document.getElementById("sidebar");
+    if (!toggle || !sidebar) return;
+    toggle.setAttribute("aria-expanded", String(sidebarOpen));
+    toggle.setAttribute("aria-controls", "sidebar");
+    toggle.setAttribute("aria-label", sidebarOpen ? "关闭菜单" : "打开菜单");
+    if (mqDrawerSidebar.matches) {
+      sidebar.setAttribute("aria-hidden", String(!sidebarOpen));
+    } else {
+      sidebar.setAttribute("aria-hidden", "false");
+    }
+  };
+
+  const closeSidebarDrawer = () => {
+    if (!sidebarOpen) return;
+    sidebarOpen = false;
+    document.getElementById("sidebar")?.classList.remove("is-open");
+    document.getElementById("drawer-backdrop")?.classList.remove("is-open");
+    syncSidebarA11y();
+  };
+
   const bind = () => {
     const $sidebar = document.getElementById("sidebar");
     const $backdrop = document.getElementById("drawer-backdrop");
@@ -1193,11 +1218,10 @@
       sidebarOpen = !sidebarOpen;
       $sidebar.classList.toggle("is-open", sidebarOpen);
       $backdrop.classList.toggle("is-open", sidebarOpen);
+      syncSidebarA11y();
     });
     $backdrop.addEventListener("click", () => {
-      sidebarOpen = false;
-      $sidebar.classList.remove("is-open");
-      $backdrop.classList.remove("is-open");
+      closeSidebarDrawer();
     });
 
     $app.querySelectorAll(".js-nav").forEach((btn) => {
@@ -1208,9 +1232,7 @@
         tablePage = 0;
         clearSelection();
         saveState(state);
-        sidebarOpen = false;
-        $sidebar?.classList.remove("is-open");
-        $backdrop?.classList.remove("is-open");
+        closeSidebarDrawer();
         notifOpen = false;
         mount();
         toast("已切换模块", currentRoute().label);
@@ -1413,6 +1435,12 @@
       refreshBatchUi();
       syncSelectAllCheckbox();
     });
+
+    syncSidebarA11y();
+    if (!sidebarMqWired) {
+      sidebarMqWired = true;
+      mqDrawerSidebar.addEventListener("change", syncSidebarA11y);
+    }
   };
 
   const bindPaletteInteractions = () => {
@@ -1638,6 +1666,12 @@
         document.getElementById("notif-pop")?.classList.remove("is-open");
         document.getElementById("notif-pop")?.setAttribute("aria-hidden", "true");
         document.getElementById("btn-notif")?.setAttribute("aria-expanded", "false");
+        e.preventDefault();
+        return;
+      }
+      if (sidebarOpen && mqDrawerSidebar.matches) {
+        closeSidebarDrawer();
+        e.preventDefault();
       }
     }
   });
