@@ -1,1708 +1,1646 @@
 (() => {
-  const $ = (sel) => document.querySelector(sel);
-  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+  "use strict";
 
-  const state = {
-    moduleKey: "inventory",
-    search: "",
-    log: [],
-    executedCount: 0,
+  const STORAGE_KEY = "nebula-workbench:v1";
+  const PAGE_SIZE = 8;
+  const MAX_FAV = 8;
+
+  const ICONS = {
+    home: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V21a1 1 0 0 1-1 1h-5v-8H9v8H4a1 1 0 0 1-1-1V9.5z"/></svg>',
+    cart: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/><path d="M3 3h2l2 12h12l2-7H6"/></svg>',
+    box: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.3 7.7L12 12l8.7-4.3M12 22V12"/></svg>',
+    coin: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5c0-1.5-1-2.5-2.5-2.5S9.5 8 9.5 9.5c0 2 5 1.5 5 3.5s-2 3.5-4 3.5-4-1.5-4-3.5M12 6v2M12 16v2"/></svg>',
+    factory: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V10l4 3V10l4 3V7l4 2v12M9 21v-4h6v4"/></svg>',
+    spark: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3M12 18v3M4.2 7.8l2.1 2.1M17.7 14.1l2.1 2.1M3 12h3M18 12h3M4.2 16.2l2.1-2.1M17.7 9.9l2.1-2.1"/><circle cx="12" cy="12" r="3"/></svg>',
+    settings: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>',
+    sun: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+    moon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 14.5A8.5 8.5 0 0 1 9.5 3 6.5 6.5 0 1 0 21 14.5z"/></svg>',
+    menu: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
+    search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>',
+    bell: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+    help: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>',
+    x: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>',
   };
 
-  const MODULES = {
-    dashboard: {
-      label: "首页",
-      desc: "企业管理系统首页，展示关键业务数据和快捷操作。",
-      groups: [
-        {
-          title: "业务概览",
-          subtitle: "关键业务指标和数据",
-          tiles: [
-            { label: "经营看板", type: "dashboard_business", keywords: ["经营", "看板", "指标"] },
-            { label: "库存概览", type: "dashboard_inventory", keywords: ["库存", "概览", "数据"] },
-            { label: "销售分析", type: "dashboard_sales", keywords: ["销售", "分析", "报表"] },
-          ],
-        },
-        {
-          title: "快捷操作",
-          subtitle: "常用功能快速访问",
-          tiles: [
-            { label: "新建销售订单", type: "dashboard_new_sales", keywords: ["新建", "销售", "订单"] },
-            { label: "新建采购订单", type: "dashboard_new_purchase", keywords: ["新建", "采购", "订单"] },
-            { label: "库存查询", type: "dashboard_inventory_query", keywords: ["库存", "查询"] },
-          ],
-        },
-      ],
-    },
-    customer: {
-      label: "客户管理",
-      desc: "客户信息管理、客户分类和客户分析。",
-      groups: [
-        {
-          title: "客户资料",
-          subtitle: "客户基本信息管理",
-          tiles: [
-            { label: "客户档案", type: "customer_profile", keywords: ["客户", "档案", "信息"] },
-            { label: "客户分类", type: "customer_category", keywords: ["客户", "分类"] },
-            { label: "客户信用管理", type: "customer_credit", keywords: ["客户", "信用", "管理"] },
-          ],
-        },
-        {
-          title: "客户分析",
-          subtitle: "客户业务数据分析",
-          tiles: [
-            { label: "客户销售分析", type: "customer_sales_analysis", keywords: ["客户", "销售", "分析"] },
-            { label: "客户回款分析", type: "customer_payment_analysis", keywords: ["客户", "回款", "分析"] },
-          ],
-        },
-      ],
-    },
-    inventory: {
-      label: "库存管理",
-      desc: "模拟：库房日常、入库/出库/调拨、以及与 MES/EAP 的对接思路（演示用）。",
-      groups: [
-        {
-          title: "库存日常工作",
-          subtitle: "库房作业人员常用操作",
-          tiles: [
-            { label: "库存工作台", type: "inventory_workbench", keywords: ["工作台", "查询", "台账"] },
-            { label: "暂存方案列表", type: "inventory_hold_plan", keywords: ["暂存", "方案", "列表"] },
-            { label: "暂不打方案列表", type: "inventory_skip_plan", keywords: ["暂不打", "方案", "列表"] },
-          ],
-        },
-        {
-          title: "入库管理",
-          subtitle: "从采购、生产、其他来源入库",
-          tiles: [
-            { label: "采购入库单", type: "inbound_purchase", keywords: ["采购", "入库", "单据", "审核"] },
-            { label: "采购入库单列表", type: "inbound_purchase_list", keywords: ["采购", "入库", "列表"] },
-            { label: "销售退货入库单", type: "inbound_sales_return", keywords: ["销售退货", "入库"] },
-            { label: "生产入库单", type: "inbound_production", keywords: ["生产", "入库"] },
-            { label: "生产入库单列表", type: "inbound_production_list", keywords: ["生产", "入库", "列表"] },
-            { label: "其他入库单", type: "inbound_other", keywords: ["其他", "入库"] },
-          ],
-        },
-        {
-          title: "出库管理",
-          subtitle: "销售、领料、其他出库",
-          tiles: [
-            { label: "销售出库单", type: "outbound_sales", keywords: ["销售", "出库", "审核", "出库"] },
-            { label: "销售出库单列表", type: "outbound_sales_list", keywords: ["销售", "出库", "列表"] },
-            { label: "其他出库单", type: "outbound_other", keywords: ["其他", "出库"] },
-            { label: "生产领料出库单", type: "outbound_production_issue", keywords: ["领料", "生产", "出库"] },
-            { label: "生产领料出库单列表", type: "outbound_production_issue_list", keywords: ["领料", "列表"] },
-            { label: "分布式出库单", type: "outbound_distributed", keywords: ["分布式", "出库"] },
-          ],
-        },
-        {
-          title: "库存调拨",
-          subtitle: "不同仓库/组织之间的调拨",
-          tiles: [
-            { label: "调拨出库单", type: "transfer_out", keywords: ["调拨", "出库"] },
-            { label: "调拨出库单列表", type: "transfer_out_list", keywords: ["调拨", "列表"] },
-            { label: "直接调拨单", type: "transfer_direct", keywords: ["直接调拨"] },
-            { label: "分步调拨出库单", type: "transfer_step_out", keywords: ["分步调拨", "出库"] },
-            { label: "分步调拨入库单", type: "transfer_step_in", keywords: ["分步调拨", "入库"] },
-          ],
-        },
-        {
-          title: "委托加工业务",
-          subtitle: "与供应商之间的受托、委外发料",
-          tiles: [
-            { label: "受托加工材料入库单", type: "commission_material_in", keywords: ["委托加工", "入库"] },
-            { label: "受托加工材料出库单", type: "commission_material_out", keywords: ["委托加工", "出库"] },
-            { label: "委托加工材料发运单", type: "commission_material_ship", keywords: ["委托加工", "发运"] },
-            { label: "受托加工材料入库单", type: "commission_material_return", keywords: ["委托加工", "入库"] },
-          ],
-        },
-        {
-          title: "生产制造对接（演示）",
-          subtitle: "展示 MES/EAP 与库存的交互逻辑",
-          tiles: [
-            { label: "MES 报工回传对账", type: "mes_integration_check", keywords: ["MES", "报工", "对账", "回传"] },
-            { label: "EAP 设备状态联动", type: "eap_integration_status", keywords: ["EAP", "设备", "状态", "采集"] },
-          ],
-        },
-      ],
-    },
-    finance: {
-      label: "财务会计",
-      desc: "演示：凭证、应收应付与库存业务结转的思路。",
-      groups: [
-        {
-          title: "会计处理",
-          subtitle: "凭证与结转演示",
-          tiles: [
-            { label: "凭证管理", type: "finance_voucher", keywords: ["凭证", "审核", "结转"] },
-            { label: "应收账款台账", type: "finance_ar", keywords: ["应收", "台账"] },
-            { label: "应付账款台账", type: "finance_ap", keywords: ["应付", "台账"] },
-          ],
-        },
-      ],
-    },
-    procurement: {
-      label: "采购管理",
-      desc: "演示：采购订单→采购入库→对账。",
-      groups: [
-        {
-          title: "采购业务",
-          subtitle: "订单到入库链路演示",
-          tiles: [
-            { label: "采购订单", type: "proc_po", keywords: ["采购", "订单"] },
-            { label: "采购入库单", type: "proc_receipt", keywords: ["入库"] },
-            { label: "供应商资料维护", type: "proc_vendor", keywords: ["供应商", "主数据"] },
-          ],
-        },
-      ],
-    },
-    sales: {
-      label: "销售管理",
-      desc: "演示：销售订单→销售出库→回款。",
-      groups: [
-        {
-          title: "销售业务",
-          subtitle: "订单到出库链路演示",
-          tiles: [
-            { label: "销售订单", type: "sales_order", keywords: ["销售", "订单"] },
-            { label: "销售出库单", type: "sales_delivery", keywords: ["出库"] },
-            { label: "客户资料维护", type: "sales_customer", keywords: ["客户", "主数据"] },
-          ],
-        },
-      ],
-    },
-    manufacturing: {
-      label: "生产制造",
-      desc: "演示：生产订单、报工、以及与库存出入库的联动。",
-      groups: [
-        {
-          title: "生产执行",
-          subtitle: "订单与报工演示",
-          tiles: [
-            { label: "生产订单", type: "mfg_mo", keywords: ["生产", "订单"] },
-            { label: "MES 报工", type: "mfg_mes_report", keywords: ["MES", "报工"] },
-            { label: "EAP 设备采集", type: "mfg_eap_collect", keywords: ["EAP", "采集"] },
-          ],
-        },
-      ],
-    },
-    quality: {
-      label: "质量管理",
-      desc: "演示：检验计划与检验单、异常处置。",
-      groups: [
-        {
-          title: "质检业务",
-          subtitle: "检验与不良处理演示",
-          tiles: [
-            { label: "检验计划", type: "q_plan", keywords: ["检验", "计划"] },
-            { label: "质量检验单", type: "q_inspection", keywords: ["质检", "检验单"] },
-            { label: "不良品处理", type: "q_defect", keywords: ["不良", "处理"] },
-          ],
-        },
-      ],
-    },
-    masterdata: {
-      label: "基础数据",
-      desc: "演示：物料、仓库、工序等主数据一致性检查。",
-      groups: [
-        {
-          title: "主数据维护",
-          subtitle: "一致性与编码对齐演示",
-          tiles: [
-            { label: "物料主数据维护", type: "md_item", keywords: ["物料", "编码", "主数据"] },
-            { label: "仓库与组织维护", type: "md_wh", keywords: ["仓库", "组织"] },
-            { label: "编码一致性校验", type: "md_align", keywords: ["一致性", "编码", "校验"] },
-          ],
-        },
-      ],
-    },
-    cost: {
-      label: "成本管理",
-      desc: "演示：成本核算与结转",
-      groups: [
-        {
-          title: "成本核算",
-          subtitle: "结转演示",
-          tiles: [
-            { label: "成本核算", type: "cost_calc", keywords: ["成本", "核算"] },
-            { label: "成本分析", type: "cost_analysis", keywords: ["成本", "分析"] },
-            { label: "成本结转", type: "cost_transfer", keywords: ["成本", "结转"] },
-          ],
-        },
-      ],
-    },
-    asset: {
-      label: "资产管理",
-      desc: "演示：资产台账与折旧",
-      groups: [
-        {
-          title: "资产台账",
-          subtitle: "维护演示",
-          tiles: [
-            { label: "资产台账", type: "asset_list", keywords: ["资产", "台账"] },
-            { label: "资产折旧", type: "asset_depreciation", keywords: ["资产", "折旧"] },
-            { label: "资产盘点", type: "asset_inventory", keywords: ["资产", "盘点"] },
-          ],
-        },
-      ],
-    },
-    mgmt: {
-      label: "管理会计",
-      desc: "演示：报表与指标",
-      groups: [
-        {
-          title: "经营分析",
-          subtitle: "指标演示",
-          tiles: [
-            { label: "经营分析报表", type: "mgmt_report", keywords: ["经营", "分析"] },
-            { label: "预算管理", type: "mgmt_budget", keywords: ["预算", "管理"] },
-            { label: "绩效指标", type: "mgmt_kpi", keywords: ["绩效", "指标"] },
-          ],
-        },
-      ],
-    },
-    supply: {
-      label: "供应链",
-      desc: "演示：采购与库存协同",
-      groups: [
-        {
-          title: "供应链协同",
-          subtitle: "链路演示",
-          tiles: [
-            { label: "供应链看板", type: "supply_board", keywords: ["看板", "供应链"] },
-            { label: "供应商协同", type: "supply_vendor", keywords: ["供应商", "协同"] },
-            { label: "需求计划", type: "supply_demand", keywords: ["需求", "计划"] },
-          ],
-        },
-      ],
-    },
-    ecommerce: {
-      label: "电商与分销",
-      desc: "演示：订单同步与出库",
-      groups: [
-        {
-          title: "订单同步",
-          subtitle: "分销演示",
-          tiles: [
-            { label: "电商订单同步", type: "ecom_sync", keywords: ["电商", "同步"] },
-            { label: "分销管理", type: "ecom_distribution", keywords: ["分销", "管理"] },
-            { label: "电商库存同步", type: "ecom_inventory_sync", keywords: ["电商", "库存", "同步"] },
-          ],
-        },
-      ],
-    },
-    plm: {
-      label: "PLM",
-      desc: "演示：BOM/工艺与变更",
-      groups: [
-        {
-          title: "产品数据",
-          subtitle: "BOM演示",
-          tiles: [
-            { label: "BOM 版本管理", type: "plm_bom", keywords: ["BOM", "版本"] },
-            { label: "工艺路线", type: "plm_route", keywords: ["工艺", "路线"] },
-            { label: "变更管理", type: "plm_change", keywords: ["变更", "管理"] },
-          ],
-        },
-      ],
-    },
-    oa: {
-      label: "协同办公",
-      desc: "演示：流程审批与通知",
-      groups: [
-        {
-          title: "流程审批",
-          subtitle: "审批演示",
-          tiles: [
-            { label: "审批任务处理", type: "oa_approval", keywords: ["审批", "流程"] },
-            { label: "请假申请", type: "oa_leave", keywords: ["请假", "申请"] },
-            { label: "报销申请", type: "oa_expense", keywords: ["报销", "申请"] },
-          ],
-        },
-      ],
-    },
-    system: {
-      label: "系统设置",
-      desc: "系统配置与管理",
-      groups: [
-        {
-          title: "系统配置",
-          subtitle: "系统参数设置",
-          tiles: [
-            { label: "用户管理", type: "system_user", keywords: ["用户", "管理"] },
-            { label: "权限设置", type: "system_permission", keywords: ["权限", "设置"] },
-            { label: "系统参数", type: "system_param", keywords: ["系统", "参数"] },
-          ],
-        },
-      ],
-    },
+  const ROUTES = [
+    { id: "overview", label: "工作台", icon: "home", group: "核心", desc: "跨模块指标、预警与快捷入口的聚合视图。" },
+    { id: "sales", label: "销售", icon: "spark", group: "核心", desc: "订单、发货与回款链路的前端模拟。" },
+    { id: "purchase", label: "采购", icon: "cart", group: "核心", desc: "请购、订单与到货协同的演示数据。" },
+    { id: "inventory", label: "库存", icon: "box", group: "核心", desc: "多仓库存、批次与可用量的静态沙盘。" },
+    { id: "finance", label: "财务", icon: "coin", group: "扩展", desc: "应收应付与对账状态的占位看板。" },
+    { id: "manufacturing", label: "生产", icon: "factory", group: "扩展", desc: "工单进度与报工回传的模拟时间线。" },
+    { id: "settings", label: "偏好", icon: "settings", group: "系统", desc: "主题与演示数据偏好（仅存于本机）。" },
+  ];
+
+  const MOCK_NOTIFICATIONS = [
+    { id: "n1", title: "待办：3 张采购入库单待审核", body: "来源：采购管理 · 模拟队列", time: "09:12" },
+    { id: "n2", title: "预警：2 个 SKU 低于安全库存", body: "仓库：华东 RDC", time: "昨天" },
+    { id: "n3", title: "同步：MES 报工回传延迟 5 分钟", body: "产线：SMT-02（演示）", time: "周一" },
+    { id: "n4", title: "提醒：月度对账窗口即将关闭", body: "财务共享 · 占位通知", time: "上周五" },
+  ];
+
+  const ORGS = [
+    { id: "hq", name: "星云集团（总部）" },
+    { id: "east", name: "华东事业部" },
+    { id: "south", name: "华南工厂" },
+  ];
+
+  const ALERT_BANNER_ID = "demo-compliance";
+
+  const APPROVAL_LABELS = ["保存提交", "部门审核", "财务审核", "过账"];
+
+  const hashSeed = (s) => {
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+    return h >>> 0;
   };
 
-  const TILES_TYPE_META = {
-    inbound: { opModes: ["保存草稿", "提交审核", "执行入库"], steps: ["保存草稿", "提交审核", "执行入库", "写入库存台账"] },
-    outbound: { opModes: ["保存草稿", "提交审核", "执行出库"], steps: ["保存草稿", "提交审核", "执行出库", "生成出库凭证"] },
-    transfer: { opModes: ["保存草稿", "提交审核", "执行调拨"], steps: ["保存草稿", "提交审核", "执行调拨", "更新在途/库存"] },
-    commission: { opModes: ["保存草稿", "提交审核", "执行委外发料"], steps: ["保存草稿", "提交审核", "执行委外发料", "回写库存/结算状态"] },
-    mes: { opModes: ["保存草稿", "提交审核", "执行报工"], steps: ["保存草稿", "提交审核", "执行报工", "回传 MES 结果/产量"] },
-    eap: { opModes: ["保存草稿", "提交审核", "同步设备数据"], steps: ["保存草稿", "提交审核", "同步设备数据", "刷新看板/异常告警"] },
-    generic: { opModes: ["保存草稿", "提交审核", "执行"], steps: ["保存草稿", "提交审核", "执行", "生成执行记录"] },
+  const rnd = (seed) => {
+    let x = seed % 2147483647;
+    if (x <= 0) x += 2147483646;
+    return () => (x = (x * 16807) % 2147483647) / 2147483647;
   };
 
-  const TILE_TYPE_TO_CATEGORY = {
-    inventory_workbench: "generic",
-    inventory_hold_plan: "generic",
-    inventory_skip_plan: "generic",
-    inbound_purchase: "inbound",
-    inbound_purchase_list: "inbound",
-    inbound_sales_return: "inbound",
-    inbound_production: "inbound",
-    inbound_production_list: "inbound",
-    inbound_other: "inbound",
-    outbound_sales: "outbound",
-    outbound_sales_list: "outbound",
-    outbound_other: "outbound",
-    outbound_production_issue: "outbound",
-    outbound_production_issue_list: "outbound",
-    outbound_distributed: "outbound",
-    transfer_out: "transfer",
-    transfer_out_list: "transfer",
-    transfer_direct: "transfer",
-    transfer_step_out: "transfer",
-    transfer_step_in: "transfer",
-    commission_material_in: "commission",
-    commission_material_out: "commission",
-    commission_material_ship: "commission",
-    commission_material_return: "commission",
-    mes_integration_check: "mes",
-    eap_integration_status: "eap",
+  const fmtMoney = (n) =>
+    new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY", maximumFractionDigits: 0 }).format(n);
 
-    // other module sample mappings
-    finance_voucher: "generic",
-    finance_ar: "generic",
-    finance_ap: "generic",
-    proc_po: "inbound",
-    proc_receipt: "inbound",
-    proc_vendor: "generic",
-    sales_order: "outbound",
-    sales_delivery: "outbound",
-    sales_customer: "generic",
-    mfg_mo: "generic",
-    mfg_mes_report: "mes",
-    mfg_eap_collect: "eap",
-    q_plan: "generic",
-    q_inspection: "generic",
-    q_defect: "commission",
-    md_item: "generic",
-    md_wh: "generic",
-    md_align: "generic",
-    cost_calc: "generic",
-    cost_analysis: "generic",
-    cost_transfer: "generic",
-    asset_list: "generic",
-    asset_depreciation: "generic",
-    asset_inventory: "generic",
-    mgmt_report: "generic",
-    mgmt_budget: "generic",
-    mgmt_kpi: "generic",
-    supply_board: "generic",
-    supply_vendor: "generic",
-    supply_demand: "generic",
-    ecom_sync: "generic",
-    ecom_distribution: "generic",
-    ecom_inventory_sync: "generic",
-    plm_bom: "generic",
-    plm_route: "generic",
-    plm_change: "generic",
-    oa_approval: "generic",
-    oa_leave: "generic",
-    oa_expense: "generic",
-    system_user: "generic",
-    system_permission: "generic",
-    system_param: "generic",
-    dashboard_business: "generic",
-    dashboard_inventory: "generic",
-    dashboard_sales: "generic",
-    dashboard_new_sales: "outbound",
-    dashboard_new_purchase: "inbound",
-    dashboard_inventory_query: "generic",
-    customer_profile: "generic",
-    customer_category: "generic",
-    customer_credit: "generic",
-    customer_sales_analysis: "generic",
-    customer_payment_analysis: "generic",
-  };
+  const fmtNum = (n) => new Intl.NumberFormat("zh-CN").format(Math.round(n));
 
-  function pad(n) {
-    return String(n).padStart(2, "0");
-  }
-
-  function ts() {
-    const d = new Date();
-    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-  }
-
-  function dateKey() {
-    const d = new Date();
-    return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
-  }
-
-  function docNo(prefix) {
-    const seq = Math.floor(1000 + Math.random() * 9000);
-    return `${prefix}-${dateKey()}-${seq}`;
-  }
-
-  function logLine(level, msg) {
-    const line = { level, msg, t: ts(), idx: state.log.length + 1 };
-    state.log.push(line);
-    renderLogLine(line);
-    updateLogButtonsHint();
-  }
-
-  function renderLogLine(line) {
-    const el = document.createElement("div");
-    let cls = "log-line-info";
-    if (line.level === "OK") cls = "log-line-ok";
-    if (line.level === "WARN") cls = "log-line-warn";
-    if (line.level === "FAIL") cls = "log-line-fail";
-    el.className = cls;
-    el.textContent = `${line.t}\t[${line.level}]\t${line.msg}`;
-    $("#opsLog").appendChild(el);
-    $("#opsLog").scrollTop = $("#opsLog").scrollHeight;
-  }
-
-  function updateLogButtonsHint() {
-    // 轻量提示：不做复杂 UI
-  }
-
-  function clearLog() {
-    state.log = [];
-    $("#opsLog").innerHTML = "";
-    logLine("INFO", "日志已清空");
-  }
-
-  function exportLog() {
-    const name = `kingdee-ops-${state.moduleKey}-${new Date().toISOString().slice(0, 10)}.log`;
-    const text = state.log
-      .map((l) => `${l.t}\t${l.level}\t${l.msg}`)
-      .join("\n");
-    const blob = new Blob([text || ""], { type: "text/plain;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
-    logLine("OK", `导出日志完成：${name}`);
-  }
-
-  async function copyLog() {
-    const text = state.log.map((l) => `${l.t}\t${l.level}\t${l.msg}`).join("\n");
+  const loadState = () => {
     try {
-      await navigator.clipboard.writeText(text);
-      logLine("OK", "复制成功");
-    } catch (e) {
-      logLine("WARN", "复制失败：浏览器限制，可使用“导出”功能");
-    }
-  }
-
-  function normalize(s) {
-    return (s || "").toLowerCase().trim();
-  }
-
-  function tileMatch(tile, q) {
-    const query = normalize(q);
-    if (!query) return true;
-    const content = [tile.label, tile.type, ...(tile.keywords || [])].join(" ").toLowerCase();
-    return content.includes(query);
-  }
-
-  function renderTiles() {
-    const mod = MODULES[state.moduleKey];
-    const tilesArea = $("#tilesArea");
-    tilesArea.innerHTML = "";
-    $("#breadcrumbModule").textContent = mod.label;
-
-    const q = state.search;
-    const fragment = document.createDocumentFragment();
-    for (const g of mod.groups) {
-      const visibleTiles = g.tiles.filter((t) => tileMatch(t, q));
-      if (visibleTiles.length === 0) continue;
-
-      const sec = document.createElement("section");
-      sec.className = "group";
-
-      const title = document.createElement("div");
-      title.className = "group-title";
-      title.textContent = g.title;
-      const sub = document.createElement("span");
-      sub.textContent = ` ${g.subtitle}`;
-      title.appendChild(sub);
-
-      const grid = document.createElement("div");
-      grid.className = "tile-grid";
-      for (const t of visibleTiles) {
-        const tile = document.createElement("div");
-        tile.className = "tile";
-        tile.tabIndex = 0;
-        tile.dataset.label = t.label;
-        tile.dataset.type = t.type;
-        tile.dataset.category = TILE_TYPE_TO_CATEGORY[t.type] || "generic";
-        tile.dataset.keywords = (t.keywords || []).join(",");
-        tile.innerHTML = `<span>${escapeHtml(t.label)}</span>`;
-        // star on some frequent items
-        if (t.label === "销售出库单" || t.label === "采购入库单") {
-          const star = document.createElement("span");
-          star.className = "star";
-          star.textContent = "★";
-          tile.appendChild(star);
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw)
+        return {
+          theme: "dark",
+          route: "overview",
+          log: [],
+          favorites: [],
+          notifReadIds: [],
+          orgId: "hq",
+          dismissedBanners: [],
+          sortByRoute: {},
+          tableDensity: "comfortable",
+          recentRoutes: [],
+          hiddenColsByRoute: {},
+        };
+      const j = JSON.parse(raw);
+      const fav = Array.isArray(j.favorites) ? j.favorites.filter((id) => ROUTES.some((r) => r.id === id)) : [];
+      const notifReadIds = Array.isArray(j.notifReadIds) ? j.notifReadIds.filter((x) => typeof x === "string") : [];
+      const orgId = ORGS.some((o) => o.id === j.orgId) ? j.orgId : "hq";
+      const dismissedBanners = Array.isArray(j.dismissedBanners)
+        ? j.dismissedBanners.filter((x) => typeof x === "string")
+        : [];
+      const sortByRoute = {};
+      if (j.sortByRoute && typeof j.sortByRoute === "object") {
+        for (const rid of Object.keys(j.sortByRoute)) {
+          const p = j.sortByRoute[rid];
+          if (p && ["c1", "c2", "c3", "c4"].includes(p.key) && (p.dir === "asc" || p.dir === "desc")) {
+            sortByRoute[rid] = { key: p.key, dir: p.dir };
+          }
         }
-        tile.addEventListener("click", () => openModalForTile(t));
-        tile.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" || e.key === " ") openModalForTile(t);
-        });
-        grid.appendChild(tile);
       }
-
-      sec.appendChild(title);
-      sec.appendChild(grid);
-      fragment.appendChild(sec);
+      const tableDensity = j.tableDensity === "compact" ? "compact" : "comfortable";
+      const recentRoutes = Array.isArray(j.recentRoutes)
+        ? j.recentRoutes.filter((id) => ROUTES.some((r) => r.id === id)).slice(0, 5)
+        : [];
+      const hiddenColsByRoute = {};
+      if (j.hiddenColsByRoute && typeof j.hiddenColsByRoute === "object") {
+        for (const rid of Object.keys(j.hiddenColsByRoute)) {
+          const arr = j.hiddenColsByRoute[rid];
+          if (!Array.isArray(arr)) continue;
+          const hid = arr.filter((x) => ["c1", "c2", "c3", "c4"].includes(x));
+          if (hid.length) hiddenColsByRoute[rid] = hid;
+        }
+      }
+      return {
+        theme: j.theme === "light" ? "light" : "dark",
+        route: ROUTES.some((r) => r.id === j.route) ? j.route : "overview",
+        log: Array.isArray(j.log) ? j.log.slice(-80) : [],
+        favorites: fav.slice(0, MAX_FAV),
+        notifReadIds,
+        orgId,
+        dismissedBanners,
+        sortByRoute,
+        tableDensity,
+        recentRoutes,
+        hiddenColsByRoute,
+      };
+    } catch {
+      return {
+        theme: "dark",
+        route: "overview",
+        log: [],
+        favorites: [],
+        notifReadIds: [],
+        orgId: "hq",
+        dismissedBanners: [],
+        sortByRoute: {},
+        tableDensity: "comfortable",
+        recentRoutes: [],
+        hiddenColsByRoute: {},
+      };
     }
+  };
 
-    if (!tilesArea.firstChild && !fragment.firstChild) {
-      const empty = document.createElement("div");
-      empty.className = "group";
-      empty.innerHTML = `<div class="group-title">无匹配卡片 <span>试试其他关键词</span></div>`;
-      tilesArea.appendChild(empty);
+  const saveState = (s) => {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          theme: s.theme,
+          route: s.route,
+          log: s.log.slice(-80),
+          favorites: s.favorites.slice(0, MAX_FAV),
+          notifReadIds: s.notifReadIds.slice(-50),
+          orgId: s.orgId,
+          dismissedBanners: s.dismissedBanners.slice(-20),
+          sortByRoute: s.sortByRoute || {},
+          tableDensity: s.tableDensity === "compact" ? "compact" : "comfortable",
+          recentRoutes: Array.isArray(s.recentRoutes) ? s.recentRoutes.slice(0, 5) : [],
+          hiddenColsByRoute: s.hiddenColsByRoute && typeof s.hiddenColsByRoute === "object" ? s.hiddenColsByRoute : {},
+        })
+      );
+    } catch {
+      /* ignore */
+    }
+  };
+
+  let state = loadState();
+
+  const parseHashRoute = () => {
+    const raw = (location.hash || "").replace(/^#/, "").replace(/^\//, "").trim();
+    if (!raw) return null;
+    return ROUTES.some((r) => r.id === raw) ? raw : null;
+  };
+
+  (function applyInitialHash() {
+    const hr = parseHashRoute();
+    if (hr) state.route = hr;
+  })();
+
+  let sidebarOpen = false;
+  let paletteOpen = false;
+  let paletteQuery = "";
+  let paletteIndex = 0;
+  let tableFilter = "";
+  let tablePage = 0;
+  let notifOpen = false;
+  const selectedRowKeys = new Set();
+  let detailFlowStep = 0;
+  let detailContext = null;
+
+  const lastRowLookup = new Map();
+  const $app = document.getElementById("app");
+  const $toastHost = document.getElementById("toast-host");
+
+  const pushLog = (text) => {
+    const ts = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const stamp = `${ts.getFullYear()}-${pad(ts.getMonth() + 1)}-${pad(ts.getDate())} ${pad(ts.getHours())}:${pad(
+      ts.getMinutes()
+    )}`;
+    state.log.unshift({ id: `${Date.now()}-${Math.random().toString(16).slice(2)}`, stamp, text });
+    saveState(state);
+  };
+
+  const toast = (title, body) => {
+    const el = document.createElement("div");
+    el.className = "toast";
+    el.innerHTML = `<strong>${escapeHtml(title)}</strong>${body ? `<span>${escapeHtml(body)}</span>` : ""}`;
+    $toastHost.appendChild(el);
+    setTimeout(() => {
+      el.style.opacity = "0";
+      el.style.transform = "translateY(6px)";
+      el.style.transition = "opacity .25s ease, transform .25s ease";
+      setTimeout(() => el.remove(), 260);
+    }, 3200);
+  };
+
+  const escapeHtml = (s) =>
+    String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+  const escapeCsv = (s) => {
+    const t = String(s);
+    if (/[",\n]/.test(t)) return `"${t.replace(/"/g, '""')}"`;
+    return t;
+  };
+
+  const currentRoute = () => ROUTES.find((r) => r.id === state.route) || ROUTES[0];
+
+  const currentOrg = () => ORGS.find((o) => o.id === state.orgId) || ORGS[0];
+
+  const tableDataRouteId = () => (state.route === "overview" ? "sales" : state.route);
+
+  const cellSortValue = (val, key, routeId) => {
+    const s = String(val);
+    if (key === "c3") {
+      if (routeId === "manufacturing") {
+        const n = parseFloat(s.replace("%", "").trim());
+        return Number.isFinite(n) ? n : s.toLowerCase();
+      }
+      const n = parseFloat(s.replace(/[¥￥,\s%]/g, "").replace(/,/g, ""));
+      return Number.isFinite(n) ? n : s.toLowerCase();
+    }
+    return s.toLowerCase();
+  };
+
+  const compareCells = (a, b, key, dir, routeId) => {
+    const va = cellSortValue(a[key], key, routeId);
+    const vb = cellSortValue(b[key], key, routeId);
+    let c = 0;
+    if (typeof va === "number" && typeof vb === "number") c = va - vb;
+    else c = String(va).localeCompare(String(vb), "zh");
+    return dir === "asc" ? c : -c;
+  };
+
+  const applySortToRows = (rows, routeId) => {
+    const spec = tableSpec(routeId);
+    const pref = state.sortByRoute && state.sortByRoute[routeId];
+    if (!pref || !pref.key || !spec.keys.includes(pref.key)) return rows;
+    const dir = pref.dir === "desc" ? "desc" : "asc";
+    const key = pref.key;
+    return [...rows].sort((x, y) => compareCells(x, y, key, dir, routeId));
+  };
+
+  const touchRecentRoute = (routeId) => {
+    if (!ROUTES.some((r) => r.id === routeId)) return;
+    const rest = state.recentRoutes.filter((id) => id !== routeId);
+    state.recentRoutes = [routeId, ...rest].slice(0, 5);
+  };
+
+  const getFilteredTableRows = (routeId) => {
+    const spec = tableSpec(routeId);
+    const q = tableFilter.trim().toLowerCase();
+    let rows = mockRows(routeId);
+    if (q) {
+      rows = rows.filter((r) => spec.keys.some((key) => String(r[key]).toLowerCase().includes(q)));
+    }
+    rows = applySortToRows(rows, routeId);
+    rows.forEach((r, idx) => {
+      r.rowKey = `${routeId}-${idx}`;
+    });
+    return rows;
+  };
+
+  const pruneStaleSelection = () => {
+    for (const k of [...selectedRowKeys]) {
+      if (!lastRowLookup.has(k)) selectedRowKeys.delete(k);
+    }
+  };
+
+  const refreshBatchUi = () => {
+    const btn = document.getElementById("batch-approve-btn");
+    if (btn) {
+      const n = selectedRowKeys.size;
+      btn.disabled = n === 0;
+      btn.textContent = n ? `批量审核 (${n})` : "批量审核";
+    }
+    document.querySelectorAll("#main-table-wrap tbody tr[data-row-key]").forEach((tr) => {
+      tr.classList.toggle("is-selected", selectedRowKeys.has(tr.getAttribute("data-row-key")));
+    });
+  };
+
+  const syncSelectAllCheckbox = () => {
+    const el = document.querySelector("#main-table-wrap thead .js-select-all");
+    if (!el) return;
+    const rid = tableDataRouteId();
+    const rows = getFilteredTableRows(rid);
+    const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE) || 1);
+    const safePage = Math.min(tablePage, totalPages - 1);
+    const start = safePage * PAGE_SIZE;
+    const pageRows = rows.slice(start, start + PAGE_SIZE);
+    const keysOnPage = pageRows.map((r) => r.rowKey);
+    const allOn = keysOnPage.length > 0 && keysOnPage.every((k) => selectedRowKeys.has(k));
+    const someOn = keysOnPage.some((k) => selectedRowKeys.has(k));
+    el.checked = allOn;
+    el.indeterminate = someOn && !allOn;
+  };
+
+  const clearSelection = () => {
+    selectedRowKeys.clear();
+  };
+
+  const unreadNotifCount = () =>
+    MOCK_NOTIFICATIONS.filter((n) => !state.notifReadIds.includes(n.id)).length;
+
+  const markNotifRead = (id) => {
+    if (!state.notifReadIds.includes(id)) {
+      state.notifReadIds.push(id);
+      saveState(state);
+    }
+  };
+
+  const toggleFavorite = (routeId) => {
+    if (!ROUTES.some((r) => r.id === routeId)) return;
+    const i = state.favorites.indexOf(routeId);
+    if (i >= 0) {
+      state.favorites.splice(i, 1);
+      saveState(state);
+      toast("已取消收藏", ROUTES.find((r) => r.id === routeId)?.label || "");
       return;
     }
-
-    tilesArea.appendChild(fragment);
-  }
-
-  function escapeHtml(s) {
-    return String(s)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
-
-  // modal logic
-  const modalOverlay = $("#modalOverlay");
-  const modalTitle = $("#modalTitle");
-  const modalSub = $("#modalSub");
-  const opModeSel = $("#opMode");
-  const formFieldsEl = $("#formFields");
-  const btnExecute = $("#btnExecute");
-  const btnCancel = $("#btnCancel");
-  const btnModalClose = $("#btnModalClose");
-
-  let modalTile = null;
-
-  function setModalOpen(open) {
-    if (open) {
-      modalOverlay.classList.remove("hidden");
-      modalOverlay.setAttribute("aria-hidden", "false");
-    } else {
-      modalOverlay.classList.add("hidden");
-      modalOverlay.setAttribute("aria-hidden", "true");
+    if (state.favorites.length >= MAX_FAV) {
+      toast("收藏已满", `最多 ${MAX_FAV} 个`);
+      return;
     }
-  }
+    state.favorites.push(routeId);
+    saveState(state);
+    toast("已加入收藏", ROUTES.find((r) => r.id === routeId)?.label || "");
+  };
 
-  function renderFormFieldsForType(type, category) {
-    const prefix =
-      category === "inbound"
-        ? "IN"
-        : category === "outbound"
-          ? "OUT"
-          : category === "transfer"
-            ? "TR"
-            : category === "commission"
-              ? "COM"
-              : category === "mes"
-                ? "MO"
-                : category === "eap"
-                  ? "EAP"
-                  : "OPS";
+  const downloadBlob = (filename, text, mime) => {
+    const blob = new Blob([text], { type: mime });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
 
-    const doc = docNo(prefix);
+  const exportTableCsv = () => {
+    const rid = tableDataRouteId();
+    const vis = getVisibleColumns(rid);
+    const rows = getFilteredTableRows(rid);
+    const head = vis.h.map(escapeCsv).join(",");
+    const lines = rows.map((r) => vis.keys.map((k) => escapeCsv(r[k])).join(","));
+    const csv = "\ufeff" + [head, ...lines].join("\n");
+    const name = `nebula_${rid}_${new Date().toISOString().slice(0, 10)}.csv`;
+    downloadBlob(name, csv, "text/csv;charset=utf-8");
+    pushLog(`[导出] 已下载表格 CSV：${name}（${rows.length} 行）`);
+    toast("已导出 CSV", name);
+  };
 
-    // 不同类别准备默认明细行（可编辑）
-    const presets =
-      category === "inbound"
-        ? [
-            { mat: "MAT-ERP-01", batch: "20260331A", qty: 10, price: 12.5, uom: "件" },
-            { mat: "MAT-ERP-02", batch: "20260331B", qty: 8, price: 10.0, uom: "件" },
-            { mat: "MAT-ERP-03", batch: "20260331A", qty: 5, price: 18.2, uom: "件" },
-          ]
-        : category === "outbound"
-          ? [
-              { mat: "MAT-ERP-01", batch: "20260331A", qty: 7, price: 12.5, uom: "件" },
-              { mat: "MAT-ERP-04", batch: "20260331C", qty: 12, price: 9.8, uom: "件" },
-              { mat: "MAT-ERP-02", batch: "20260331B", qty: 3, price: 10.0, uom: "件" },
-            ]
-          : category === "transfer"
-            ? [
-                { mat: "MAT-ERP-02", batch: "20260331B", qty: 15, price: 10.0, uom: "件" },
-                { mat: "MAT-ERP-05", batch: "20260331D", qty: 6, price: 14.2, uom: "件" },
-                { mat: "MAT-ERP-01", batch: "20260331A", qty: 4, price: 12.5, uom: "件" },
-              ]
-            : category === "commission"
-              ? [
-                  { mat: "MAT-ERP-06", batch: "20260331X", qty: 9, price: 21.3, uom: "件" },
-                  { mat: "MAT-ERP-07", batch: "20260331Y", qty: 6, price: 16.1, uom: "件" },
-                  { mat: "MAT-ERP-02", batch: "20260331B", qty: 5, price: 10.0, uom: "件" },
-                ]
-              : category === "mes"
-                ? [
-                    { mat: "FG-ASSY-01", batch: "MO-20260331-001", qty: 120, price: 0.8, uom: "件" },
-                    { mat: "FG-ASSY-02", batch: "MO-20260331-001", qty: 48, price: 0.9, uom: "件" },
-                    { mat: "FG-ASSY-01", batch: "MO-20260331-001", qty: 10, price: 0.8, uom: "件" },
-                  ]
-                : category === "eap"
-                  ? [
-                      { mat: "设备产量采集", batch: "CNC-01", qty: 320, price: 0.1, uom: "点" },
-                      { mat: "设备停机统计", batch: "CNC-01", qty: 6, price: 0.0, uom: "次" },
-                      { mat: "设备报警事件", batch: "CNC-01", qty: 1, price: 0.0, uom: "次" },
-                    ]
-                  : [
-                      { mat: "MAT-ERP-01", batch: "20260331A", qty: 10, price: 12.5, uom: "件" },
-                      { mat: "MAT-ERP-02", batch: "20260331B", qty: 8, price: 10.0, uom: "件" },
-                      { mat: "MAT-ERP-03", batch: "20260331A", qty: 5, price: 18.2, uom: "件" },
-                    ];
+  const exportLogTxt = () => {
+    if (!state.log.length) {
+      toast("暂无日志", "先执行模拟操作再导出");
+      return;
+    }
+    const body = state.log.map((x) => `[${x.stamp}] ${x.text}`).join("\n");
+    downloadBlob(`nebula_ops_${new Date().toISOString().slice(0, 10)}.log`, body, "text/plain;charset=utf-8");
+    toast("已导出日志", ".log 文件已下载");
+  };
 
-    formFieldsEl.innerHTML = `
-      <div class="doc-shell">
-        <div class="doc-topline">
-          <div class="doc-status" id="docStatus">
-            <span class="s-dot"></span>
-            <span>草稿（模拟）</span>
-          </div>
-          <div class="doc-meta-right">
-            <div style="font-size:12px;color:rgba(255,255,255,0.65);text-align:right;">单据号</div>
-            <div style="font-size:14px;font-weight:800;">${escapeHtml(doc)}</div>
-          </div>
-          <div style="display:none;">
-            <input id="docNoInput" value="${escapeHtml(doc)}" readonly />
-          </div>
-        </div>
+  const copyTimelineText = () => {
+    const lines = state.log.length
+      ? state.log.map((x) => `[${x.stamp}] ${x.text}`)
+      : ["（暂无操作记录）"];
+    navigator.clipboard?.writeText(lines.join("\n")).then(
+      () => toast("已复制", "动态内容已写入剪贴板"),
+      () => toast("复制失败", "浏览器未授权剪贴板")
+    );
+  };
 
-        <div class="doc-grid">
-          <div class="doc-item">
-            <div class="k">目标/设备</div>
-            <div class="v">
-              <select id="targetSelect" class="line-input" style="padding:7px 10px;">
-                <option value="CK01">仓库：CK01（原材料）</option>
-                <option value="CK02">仓库：CK02（成品仓）</option>
-                <option value="LINE-A">产线：LINE-A</option>
-                <option value="CNC-01">设备：CNC-01</option>
-              </select>
-            </div>
-          </div>
-          <div class="doc-item">
-            <div class="k">${category === "mes" ? "工单号" : category === "eap" ? "同步来源" : "摘要"}</div>
-            <div class="v">
-              ${
-                category === "mes"
-                  ? `<input id="moInput" class="line-input" value="MO-20260331-001" />`
-                  : category === "eap"
-                    ? `<input id="syncFromInput" class="line-input" value="EAP-KP-01" />`
-                    : `<input id="summaryInput" class="line-input" placeholder="例如：摘要/用途/异常说明" />`
-              }
-            </div>
-          </div>
-          ${
-            category === "eap"
-              ? `<div class="doc-item" style="grid-column:1 / -1;">
-                    <div class="k">同步策略</div>
-                    <div class="v">
-                      <select id="syncModeSelect" class="line-input" style="padding:7px 10px;">
-                        <option value="delta">增量（推荐）</option>
-                        <option value="full">全量（风险大）</option>
-                      </select>
-                    </div>
-                  </div>`
-              : ""
-          }
-        </div>
+  const mockKpis = (routeId) => {
+    const day = new Date().toISOString().slice(0, 10);
+    const rand = rnd(hashSeed(routeId + day + state.orgId));
+    const base = 1e5 + rand() * 4e5;
+    if (routeId === "overview") {
+      return [
+        { label: "今日出库金额", value: fmtMoney(base * 1.1), delta: `${(rand() * 4 + 1).toFixed(1)}%`, up: true },
+        { label: "在制工单", value: fmtNum(20 + rand() * 40), delta: `${(rand() * 3).toFixed(1)}%`, up: false },
+        { label: "待审单据", value: fmtNum(3 + rand() * 12), delta: "环比", up: rand() > 0.5 },
+        { label: "库存周转天数", value: `${(18 + rand() * 10).toFixed(1)} 天`, delta: `${(rand() * 2).toFixed(1)} 天`, up: rand() > 0.5 },
+      ];
+    }
+    if (routeId === "sales") {
+      return [
+        { label: "本月签约", value: fmtMoney(base * 2.2), delta: `${(rand() * 8 + 2).toFixed(1)}%`, up: true },
+        { label: "待发货行", value: fmtNum(80 + rand() * 120), delta: "较昨日", up: rand() > 0.4 },
+        { label: "回款率", value: `${(82 + rand() * 12).toFixed(1)}%`, delta: "目标 85%", up: rand() > 0.5 },
+        { label: "退货率", value: `${(rand() * 2.5).toFixed(2)}%`, delta: "滚动 30 天", up: false },
+      ];
+    }
+    if (routeId === "purchase") {
+      return [
+        { label: "在途订单金额", value: fmtMoney(base * 0.9), delta: `${fmtNum(rand() * 6)} 笔`, up: true },
+        { label: "准时到货率", value: `${(88 + rand() * 8).toFixed(1)}%`, delta: "供应商维度", up: rand() > 0.3 },
+        { label: "待对账发票", value: fmtNum(4 + rand() * 15), delta: "财务共享", up: rand() > 0.5 },
+        { label: "安全库存预警", value: fmtNum(rand() * 8), delta: "SKU 数", up: false },
+      ];
+    }
+    if (routeId === "inventory") {
+      return [
+        { label: "可用库存金额", value: fmtMoney(base * 3.5), delta: "全组织", up: rand() > 0.5 },
+        { label: "冻结数量行", value: fmtNum(12 + rand() * 40), delta: "质检/锁库", up: rand() > 0.5 },
+        { label: "今日出入库笔数", value: fmtNum(200 + rand() * 400), delta: "含调拨", up: true },
+        { label: "盘点差异", value: fmtMoney(rand() * 900), delta: "待处理", up: false },
+      ];
+    }
+    if (routeId === "finance") {
+      return [
+        { label: "应收余额", value: fmtMoney(base * 1.8), delta: "账期内", up: rand() > 0.5 },
+        { label: "应付余额", value: fmtMoney(base * 1.2), delta: "已暂估", up: rand() > 0.5 },
+        { label: "现金流覆盖", value: `${(1.1 + rand() * 0.4).toFixed(2)}x`, delta: "滚动 90 天", up: true },
+        { label: "未核销差异", value: fmtNum(rand() * 6), delta: "对账中心", up: false },
+      ];
+    }
+    if (routeId === "manufacturing") {
+      return [
+        { label: "计划达成率", value: `${(91 + rand() * 6).toFixed(1)}%`, delta: "本周", up: true },
+        { label: "设备 OEE", value: `${(72 + rand() * 18).toFixed(1)}%`, delta: "关键产线", up: rand() > 0.45 },
+        { label: "在制不良率", value: `${(rand() * 1.8).toFixed(2)}%`, delta: "PPM 模拟", up: false },
+        { label: "报工待同步", value: fmtNum(rand() * 25), delta: "MES 队列", up: rand() > 0.5 },
+      ];
+    }
+    return [
+      { label: "主题", value: state.theme === "dark" ? "深色" : "浅色", delta: "本机保存", up: true },
+      { label: "演示日志条数", value: fmtNum(state.log.length), delta: "最多 80", up: state.log.length < 40 },
+      { label: "命令面板", value: "Ctrl K", delta: "快速跳转", up: true },
+      { label: "数据性质", value: "静态模拟", delta: "无后端", up: true },
+    ];
+  };
 
-        <div class="lines-title">明细行（可编辑数量/价格）</div>
-        <table class="lines-table" role="table" aria-label="lines table">
-          <thead>
-            <tr>
-              <th style="width:22%;">物料</th>
-              <th style="width:18%;">批次/工单</th>
-              <th style="width:14%;">数量</th>
-              <th style="width:10%;">单位</th>
-              <th style="width:16%;">单价</th>
-              <th style="width:20%;">金额</th>
-            </tr>
-          </thead>
-          <tbody id="linesTbody">
-            ${presets
+  const metaBlock = (rand) => {
+    const owners = ["王某", "李某", "周某", "陈某"];
+    const depts = ["销售部", "采购部", "仓储部", "财务部", "生产部"];
+    const remarks = ["常规", "加急", "客户设变", "试产", "盘点调整"];
+    const pick = (arr) => arr[Math.floor(rand() * arr.length)];
+    const m = Math.floor(rand() * 9) + 1;
+    const d = Math.floor(rand() * 27) + 1;
+    return {
+      dept: pick(depts),
+      operator: pick(owners),
+      created: `2025-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
+      remark: pick(remarks),
+      lines: `${Math.floor(rand() * 12) + 1} 行`,
+    };
+  };
+
+  const mockRows = (routeId) => {
+    const rand = rnd(hashSeed(routeId + "rows" + state.orgId));
+    const customers = ["华东精密", "云启科技", "远航电子", "嘉禾医疗", "北辰汽配", "澜图包装"];
+    const suppliers = ["鑫源钢材", "恒通化工", "联创光电", "宏泰物流", "景明橡胶", "坤元纸业"];
+    const skus = ["A-1001 控制器", "B-220 结构件", "C-09 线束", "D-331 钣金", "E-77 密封圈", "F-12 芯片"];
+    const statuses = [
+      { t: "已审核", c: "ok" },
+      { t: "待审核", c: "warn" },
+      { t: "执行中", c: "info" },
+      { t: "已关闭", c: "ok" },
+      { t: "异常", c: "danger" },
+    ];
+    const pick = (arr) => arr[Math.floor(rand() * arr.length)];
+
+    const rows = [];
+    const n = 26;
+    for (let i = 0; i < n; i++) {
+      const st = pick(statuses);
+      const id = `NX-${String(240400 + i * 11 + Math.floor(rand() * 9)).padStart(6, "0")}`;
+      const meta = metaBlock(rnd(hashSeed(`${routeId}-${i}`)));
+      if (routeId === "sales" || routeId === "overview") {
+        rows.push({
+          c1: id,
+          c2: pick(customers),
+          c3: fmtMoney(8000 + rand() * 120000),
+          c4: st.t,
+          badge: st.c,
+          meta,
+        });
+      } else if (routeId === "purchase") {
+        rows.push({
+          c1: id,
+          c2: pick(suppliers),
+          c3: fmtNum(20 + rand() * 5000),
+          c4: st.t,
+          badge: st.c,
+          meta,
+        });
+      } else if (routeId === "inventory") {
+        rows.push({
+          c1: pick(skus),
+          c2: ["总仓", "华东 RDC", "华南 RDC", "VMI 仓"][Math.floor(rand() * 4)],
+          c3: fmtNum(rand() * 8000),
+          c4: st.t,
+          badge: st.c,
+          meta,
+        });
+      } else if (routeId === "finance") {
+        const fr = ["待核销", "部分核销", "已核销", "争议"];
+        const fc = ["warn", "info", "ok", "danger"];
+        const fi = Math.floor(rand() * 4);
+        rows.push({
+          c1: id,
+          c2: rand() > 0.5 ? pick(customers) : pick(suppliers),
+          c3: fmtMoney(5000 + rand() * 200000),
+          c4: fr[fi],
+          badge: fc[fi],
+          meta,
+        });
+      } else if (routeId === "manufacturing") {
+        rows.push({
+          c1: `MO-${100088 + i}`,
+          c2: pick(skus),
+          c3: `${Math.floor(rand() * 100)}%`,
+          c4: ["排队", "加工", "待检", "已完工"][Math.floor(rand() * 4)],
+          badge: st.c,
+          meta,
+        });
+      } else {
+        rows.push({
+          c1: ["主题", "路由", "日志", "筛选", "快捷键", "关于"][i % 6],
+          c2: "偏好项",
+          c3: ["深色", state.route, `${state.log.length} 条`, tableFilter || "—", "Ctrl+K", "演示"][i % 6],
+          c4: "本地",
+          badge: "info",
+          meta,
+        });
+      }
+    }
+    return rows;
+  };
+
+  const tableSpec = (routeId) => {
+    if (routeId === "sales" || routeId === "overview")
+      return { h: ["单据", "客户", "含税金额", "状态"], keys: ["c1", "c2", "c3", "c4"] };
+    if (routeId === "purchase") return { h: ["单据", "供应商", "数量", "状态"], keys: ["c1", "c2", "c3", "c4"] };
+    if (routeId === "inventory") return { h: ["物料", "仓库", "可用量", "状态"], keys: ["c1", "c2", "c3", "c4"] };
+    if (routeId === "finance") return { h: ["台账行", "往来单位", "余额", "核销"], keys: ["c1", "c2", "c3", "c4"] };
+    if (routeId === "manufacturing") return { h: ["工单", "产品", "完成度", "工序状态"], keys: ["c1", "c2", "c3", "c4"] };
+    return { h: ["项", "类别", "值", "范围"], keys: ["c1", "c2", "c3", "c4"] };
+  };
+
+  const getVisibleColumns = (routeId) => {
+    const spec = tableSpec(routeId);
+    const raw = (state.hiddenColsByRoute && state.hiddenColsByRoute[routeId]) || [];
+    const hidden = new Set(raw.filter((k) => spec.keys.includes(k)));
+    const keys = [];
+    const h = [];
+    spec.keys.forEach((k, i) => {
+      if (!hidden.has(k)) {
+        keys.push(k);
+        h.push(spec.h[i]);
+      }
+    });
+    if (keys.length === 0) return { h: spec.h, keys: spec.keys };
+    return { h, keys };
+  };
+
+  const renderColVisPanel = (routeId) => {
+    const spec = tableSpec(routeId);
+    const hidden = new Set((state.hiddenColsByRoute && state.hiddenColsByRoute[routeId]) || []);
+    return spec.keys
+      .map((k, i) => {
+        const on = !hidden.has(k);
+        return `<label class="col-vis-label"><input type="checkbox" class="js-col-vis" data-col="${k}" ${on ? "checked" : ""} /> ${escapeHtml(spec.h[i])}</label>`;
+      })
+      .join("");
+  };
+
+  const timeline = () => {
+    const items = state.log.slice(0, 6);
+    if (!items.length) {
+      return [
+        { t: "系统", m: "欢迎使用星云工作台。数据均为前端随机种子生成。", time: "—" },
+        { t: "提示", m: "使用 Ctrl+K 打开命令面板；点表格行查看详情。", time: "—" },
+      ];
+    }
+    return items.map((x) => ({ t: "操作", m: x.text, time: x.stamp.slice(11) }));
+  };
+
+  const buildDetailHtml = (routeId, row, spec) => {
+    const m = row.meta || {};
+    const rows = [
+      ["业务日期", m.created || "—"],
+      ["责任部门", m.dept || "—"],
+      ["经办人", m.operator || "—"],
+      ["备注摘要", m.remark || "—"],
+      ["明细行数", m.lines || "—"],
+      [spec.h[0], row.c1],
+      [spec.h[1], row.c2],
+      [spec.h[2], row.c3],
+      [spec.h[3], row.c4],
+    ];
+    return `<dl>${rows
+      .map(([k, v]) => `<div><dt>${escapeHtml(k)}</dt><dd>${escapeHtml(v)}</dd></div>`)
+      .join("")}</dl>`;
+  };
+
+  const buildApprovalHtml = (completedSteps) => {
+    const items = APPROVAL_LABELS.map((label, i) => {
+      let cls = "";
+      if (i < completedSteps) cls = "is-done";
+      else if (i === completedSteps) cls = "is-current";
+      return `<li class="${cls}">${escapeHtml(label)}</li>`;
+    }).join("");
+    const done = completedSteps >= APPROVAL_LABELS.length;
+    return `<section class="detail-approval">
+      <h4>模拟审批流</h4>
+      <ol class="approval-steps">${items}</ol>
+      <button type="button" class="btn btn--primary js-approval-next" ${done ? "disabled" : ""}>${done ? "流程已结束" : "下一步（模拟）"}</button>
+    </section>`;
+  };
+
+  const renderDetailBodyFull = () => {
+    if (!detailContext) return "";
+    const { routeId, row } = detailContext;
+    const spec = tableSpec(routeId);
+    return buildDetailHtml(routeId, row, spec) + buildApprovalHtml(detailFlowStep);
+  };
+
+  const renderKpis = (routeId) => {
+    const kpis = mockKpis(routeId);
+    return kpis
+      .map((k) => {
+        const cls = k.up ? "kpi__delta kpi__delta--up" : "kpi__delta kpi__delta--down";
+        const arrow = k.up ? "▲" : "▼";
+        return `<article class="kpi">
+          <div class="kpi__label">${escapeHtml(k.label)}</div>
+          <div class="kpi__value">${escapeHtml(k.value)}</div>
+          <div class="${cls}">${arrow} ${escapeHtml(k.delta)}</div>
+        </article>`;
+      })
+      .join("");
+  };
+
+  const renderQuickLinks = () => {
+    const links = [
+      { id: "sales", label: "销售", sub: "订单与出库" },
+      { id: "purchase", label: "采购", sub: "订单与到货" },
+      { id: "inventory", label: "库存", sub: "多仓沙盘" },
+      { id: "finance", label: "财务", sub: "应收应付" },
+    ];
+    return `<div class="quick-grid" role="navigation" aria-label="快捷入口">
+      ${links
+        .map(
+          (x) => `<button type="button" class="quick-card js-nav" data-route="${x.id}">
+        <span class="quick-card__label">${escapeHtml(x.label)}</span>
+        <span class="quick-card__sub">${escapeHtml(x.sub)}</span>
+      </button>`
+        )
+        .join("")}
+    </div>`;
+  };
+
+  const renderSortTh = (routeId, label, colKey) => {
+    const pref = state.sortByRoute[routeId];
+    const active = pref && pref.key === colKey;
+    const ico = !active ? "↕" : pref.dir === "asc" ? "↑" : "↓";
+    const sort = active ? (pref.dir === "asc" ? "ascending" : "descending") : "none";
+    return `<th class="th-sort" scope="col"><button type="button" class="th-sort-btn js-sort-col" data-col="${colKey}" aria-sort="${sort}">${escapeHtml(label)}<span class="th-sort-ico" aria-hidden="true">${ico}</span></button></th>`;
+  };
+
+  const renderTable = (routeId) => {
+    const vis = getVisibleColumns(routeId);
+    const rows = getFilteredTableRows(routeId);
+
+    lastRowLookup.clear();
+    rows.forEach((r) => lastRowLookup.set(r.rowKey, { routeId, row: r }));
+
+    const total = rows.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE) || 1);
+    if (tablePage >= totalPages) tablePage = totalPages - 1;
+    const start = tablePage * PAGE_SIZE;
+    const pageRows = rows.slice(start, start + PAGE_SIZE);
+
+    const head =
+      `<th class="col-check"><input type="checkbox" class="js-select-all" aria-label="本页全选" /></th>` +
+      vis.keys.map((k, i) => renderSortTh(routeId, vis.h[i], k)).join("");
+    const body = pageRows
+      .map(
+        (r) =>
+          `<tr class="data-row" tabindex="0" data-row-key="${escapeHtml(r.rowKey)}">
+            <td class="col-check" data-stop-row="1"><input type="checkbox" class="js-row-check" data-row-key="${escapeHtml(r.rowKey)}" ${selectedRowKeys.has(r.rowKey) ? "checked" : ""} aria-label="选择行" /></td>
+            ${vis.keys
               .map(
-                (r, i) => `
-              <tr class="line-row" data-i="${i}">
-                <td><input class="line-input line-mat" value="${escapeHtml(r.mat)}" /></td>
-                <td><input class="line-input line-batch" value="${escapeHtml(r.batch)}" /></td>
-                <td><input class="line-input line-qty" type="number" min="0" step="1" value="${r.qty}" /></td>
-                <td><span style="display:inline-block;padding:7px 0;color:rgba(255,255,255,0.85);font-size:13px;">${escapeHtml(r.uom)}</span></td>
-                <td><input class="line-input line-price" type="number" min="0" step="0.01" value="${r.price}" /></td>
-                <td><span class="line-amt" style="font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;">${(r.qty * r.price).toFixed(
-                  2
-                )}</span></td>
-              </tr>
-            `
+                (k, idx) =>
+                  `<td>${idx === vis.keys.length - 1 ? `<span class="badge badge--${r.badge}">${escapeHtml(r[k])}</span>` : escapeHtml(r[k])}</td>`
               )
               .join("")}
-          </tbody>
-        </table>
+          </tr>`
+      )
+      .join("");
 
-        <div class="lines-foot">
-          <div class="total-pill">合计数量：<span id="totalQty">0</span></div>
-          <div class="total-pill">合计金额：<span id="totalAmt">0.00</span></div>
-          <div style="display:flex;align-items:center;gap:10px;margin-left:auto;">
-            ${
-              category === "eap"
-                ? ""
-                : `<span style="color:rgba(255,255,255,0.65);font-size:12px;">备注</span><input id="remarkInput" class="line-input" style="min-width:200px;" placeholder="例如：批次/工单/异常说明" />`
-            }
+    const pager =
+      total > PAGE_SIZE
+        ? `<div class="table-pager">
+        <span>共 ${fmtNum(total)} 条 · 第 ${tablePage + 1} / ${totalPages} 页</span>
+        <div class="table-pager__btns">
+          <button type="button" class="btn btn--ghost js-page-prev" ${tablePage <= 0 ? "disabled" : ""}>上一页</button>
+          <button type="button" class="btn btn--ghost js-page-next" ${tablePage >= totalPages - 1 ? "disabled" : ""}>下一页</button>
+        </div>
+      </div>`
+        : `<div class="table-pager"><span>共 ${fmtNum(total)} 条</span></div>`;
+
+    return `<div class="table-wrap table-wrap--scroll" id="main-table-wrap"><table class="data data--sortable" role="grid"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>${pager}</div>`;
+  };
+
+  const renderTimeline = () => {
+    const items = timeline();
+    return items
+      .map(
+        (it) => `<div class="tl-item">
+        <div class="tl-dot" aria-hidden="true"></div>
+        <div class="tl-body">
+          <strong>${escapeHtml(it.t)}</strong>
+          <p>${escapeHtml(it.m)}</p>
+        </div>
+        <span class="tl-time">${escapeHtml(it.time)}</span>
+      </div>`
+      )
+      .join("");
+  };
+
+  const renderView = () => {
+    const r = currentRoute();
+    const isSettings = r.id === "settings";
+
+    if (isSettings) {
+      return `<div class="view" id="view-root">
+        <div class="view-head">
+          <div>
+            <h1>${escapeHtml(r.label)}</h1>
+            <p>${escapeHtml(r.desc)}</p>
           </div>
+        </div>
+        <div class="panel">
+          <div class="panel__head"><h2>外观</h2></div>
+          <div class="timeline">
+            <div class="tl-item">
+              <div class="tl-dot"></div>
+              <div class="tl-body">
+                <strong>主题模式</strong>
+                <p>在浅色与深色之间切换；设置写入本机浏览器。</p>
+              </div>
+              <button type="button" class="btn btn--primary js-theme-toggle">切换为${state.theme === "dark" ? "浅色" : "深色"}</button>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot"></div>
+              <div class="tl-body">
+                <strong>表格密度</strong>
+                <p>业务明细表行高与字号；与主题一并保存。</p>
+              </div>
+              <div class="density-btns">
+                <button type="button" class="btn ${state.tableDensity === "comfortable" ? "btn--primary" : ""} js-density" data-density="comfortable">舒适</button>
+                <button type="button" class="btn ${state.tableDensity === "compact" ? "btn--primary" : ""} js-density" data-density="compact">紧凑</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel__head"><h2>演示数据</h2></div>
+          <div class="timeline">
+            <div class="tl-item">
+              <div class="tl-dot"></div>
+              <div class="tl-body">
+                <strong>重置本地状态</strong>
+                <p>清除主题、路由、组织、预警条、收藏、通知已读、列显示、操作日志。</p>
+              </div>
+              <button type="button" class="btn js-reset">重置</button>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot"></div>
+              <div class="tl-body">
+                <strong>导出操作日志</strong>
+                <p>将当前最多 80 条模拟操作记录下载为 .log 文本。</p>
+              </div>
+              <button type="button" class="btn js-export-log">下载 .log</button>
+            </div>
+          </div>
+        </div>
+        <div class="grid-kpi">${renderKpis("settings")}</div>
+      </div>`;
+    }
+
+    const quick = r.id === "overview" ? renderQuickLinks() : "";
+
+    return `<div class="view" id="view-root">
+      ${quick}
+      <div class="view-head">
+        <div>
+          <h1>${escapeHtml(r.label)}</h1>
+          <p>${escapeHtml(r.desc)}</p>
+        </div>
+        <div class="view-actions">
+          <button type="button" class="btn btn--primary js-sim" data-kind="approve">模拟审核</button>
+          <button type="button" class="btn js-sim" data-kind="sync">模拟同步</button>
+          <button type="button" class="btn js-export-table">导出表格 CSV</button>
+        </div>
+      </div>
+      <div class="grid-kpi">${renderKpis(r.id)}</div>
+      <div class="split">
+        <div>
+          <section class="panel panel--popover">
+            <div class="panel__head">
+              <h2>${r.id === "overview" ? "跨模块动态" : "业务明细"}</h2>
+              <div class="panel__tools">
+                <details class="col-vis" id="col-vis-details">
+                  <summary class="btn btn--ghost col-vis-summary">列显示</summary>
+                  <div class="col-vis-pop" role="group" aria-label="列显示">${renderColVisPanel(tableDataRouteId())}</div>
+                </details>
+                <button type="button" class="btn btn--primary js-batch-approve" id="batch-approve-btn" disabled>批量审核</button>
+                <input type="search" class="input js-table-filter" placeholder="筛选当前表…" value="${escapeHtml(tableFilter)}" aria-label="筛选表格" />
+                <button type="button" class="btn btn--ghost js-sort-clear">清除排序</button>
+                <button type="button" class="btn btn--ghost js-refresh">刷新演示数据</button>
+              </div>
+            </div>
+            ${renderTable(tableDataRouteId())}
+          </section>
+        </div>
+        <aside class="panel" aria-label="时间线">
+          <div class="panel__head">
+            <h2>动态</h2>
+            <div class="panel__tools">
+              <button type="button" class="btn btn--ghost js-copy-tl">复制</button>
+            </div>
+          </div>
+          <div class="timeline">${renderTimeline()}</div>
+        </aside>
+      </div>
+    </div>`;
+  };
+
+  const renderNavGroups = () => {
+    const favIds = [...state.favorites];
+    const favBlock =
+      favIds.length > 0
+        ? `<div class="nav-group">
+        <div class="nav-group__label">收藏</div>
+        ${favIds
+          .map((id) => {
+            const item = ROUTES.find((x) => x.id === id);
+            if (!item) return "";
+            return `<div class="nav-item-wrap">
+            <button type="button" class="nav-item js-nav" data-route="${item.id}" aria-current="${item.id === state.route ? "page" : "false"}">
+              ${ICONS[item.icon] || ""}<span>${escapeHtml(item.label)}</span>
+            </button>
+            <button type="button" class="nav-fav js-fav is-on" data-route="${item.id}" aria-label="取消收藏 ${escapeHtml(item.label)}" title="取消收藏">★</button>
+          </div>`;
+          })
+          .join("")}
+      </div>`
+        : "";
+
+    const navGroups = {};
+    ROUTES.forEach((item) => {
+      navGroups[item.group] = navGroups[item.group] || [];
+      navGroups[item.group].push(item);
+    });
+
+    const rest = Object.keys(navGroups)
+      .map(
+        (g) => `<div class="nav-group">
+        <div class="nav-group__label">${escapeHtml(g)}</div>
+        ${navGroups[g]
+          .map((item) => {
+            const on = state.favorites.includes(item.id) ? "is-on" : "";
+            return `<div class="nav-item-wrap">
+            <button type="button" class="nav-item js-nav" data-route="${item.id}" aria-current="${item.id === state.route ? "page" : "false"}">
+              ${ICONS[item.icon] || ""}<span>${escapeHtml(item.label)}</span>
+            </button>
+            <button type="button" class="nav-fav js-fav ${on}" data-route="${item.id}" aria-label="收藏 ${escapeHtml(item.label)}" title="收藏">★</button>
+          </div>`;
+          })
+          .join("")}
+      </div>`
+      )
+      .join("");
+
+    return favBlock + rest;
+  };
+
+  const renderShell = () => {
+    const r = currentRoute();
+    const org = currentOrg();
+    const unread = unreadNotifCount();
+    const badgeCls = unread > 0 ? "notif-badge is-on" : "notif-badge";
+    const showBanner = !state.dismissedBanners.includes(ALERT_BANNER_ID);
+    const orgOptions = ORGS.map(
+      (o) => `<option value="${escapeHtml(o.id)}" ${o.id === state.orgId ? "selected" : ""}>${escapeHtml(o.name)}</option>`
+    ).join("");
+
+    return `
+      <aside class="sidebar" id="sidebar" aria-label="主导航">
+        <div class="sidebar-brand">
+          <div class="sidebar-brand__row">
+            <div class="sidebar-brand__mark">NX</div>
+            <div class="sidebar-brand__text">
+              <strong>星云工作台</strong>
+              <span>Enterprise Mock</span>
+            </div>
+          </div>
+        </div>
+        <nav class="sidebar-nav">${renderNavGroups()}</nav>
+        <div class="sidebar-foot">静态演示 · 非金蝶官方产品<br />商标归权利人所有</div>
+      </aside>
+      <div class="drawer-backdrop" id="drawer-backdrop" aria-hidden="true"></div>
+      <div class="main">
+        <header class="topbar">
+          <button type="button" class="menu-toggle" id="menu-toggle" aria-label="打开菜单">${ICONS.menu}</button>
+          <div class="org-select-wrap">
+            <label for="org-select">组织</label>
+            <select id="org-select" class="input org-select" aria-label="切换组织">${orgOptions}</select>
+          </div>
+          <div class="breadcrumb">
+            <span class="sep" aria-hidden="true">|</span>
+            <strong>${escapeHtml(org.name)}</strong><span class="sep">/</span><strong>${escapeHtml(r.label)}</strong>
+          </div>
+          <div class="topbar-spacer"></div>
+          <div class="notif-wrap" id="notif-wrap">
+            <button type="button" class="icon-btn notif-btn" id="btn-notif" aria-label="通知" aria-expanded="false">${ICONS.bell}<span class="${badgeCls}" id="notif-badge">${unread > 0 ? escapeHtml(String(unread)) : ""}</span></button>
+            <div class="notif-pop" id="notif-pop" role="menu" aria-hidden="true">
+              <div class="notif-pop__head">通知 · 演示数据</div>
+              ${MOCK_NOTIFICATIONS.map((n) => {
+                const read = state.notifReadIds.includes(n.id);
+                return `<button type="button" class="notif-item ${read ? "is-read" : ""} js-notif-item" data-notif-id="${n.id}" role="menuitem">
+                  <strong>${escapeHtml(n.title)}</strong>
+                  <span>${escapeHtml(n.body)}</span>
+                  <time>${escapeHtml(n.time)}</time>
+                </button>`;
+              }).join("")}
+            </div>
+          </div>
+          <button type="button" class="search-chip" id="open-palette" aria-label="打开命令面板">
+            ${ICONS.search}
+            <span>搜索或跳转…</span>
+            <span class="search-chip__kbd-wrap"><kbd>Ctrl</kbd><kbd>K</kbd></span>
+          </button>
+          <button type="button" class="icon-btn" id="btn-help" title="快捷键" aria-label="快捷键帮助">${ICONS.help}</button>
+          <button type="button" class="icon-btn js-theme-toggle" title="切换主题" aria-label="切换主题">
+            ${state.theme === "dark" ? ICONS.sun : ICONS.moon}
+          </button>
+          <div class="user-pill">
+            <span>演示用户</span>
+            <div class="user-pill__avatar" aria-hidden="true">演</div>
+          </div>
+        </header>
+        ${
+          showBanner
+            ? `<div class="alert-banner" role="status">
+          <div class="alert-banner__text"><strong>演示提示</strong>：当前为静态沙盘，切换组织会改变随机演示数据；请勿用于正式业务决策。</div>
+          <button type="button" class="icon-btn js-dismiss-banner" aria-label="关闭提示">${ICONS.x}</button>
+        </div>`
+            : ""
+        }
+        ${renderView()}
+      </div>
+    `;
+  };
+
+  const paletteRoutes = () => {
+    const q = paletteQuery.trim().toLowerCase();
+    if (!q) return ROUTES.slice();
+    const hit = ROUTES.filter(
+      (r) => r.label.toLowerCase().includes(q) || r.id.includes(q) || r.desc.toLowerCase().includes(q)
+    );
+    return hit.length ? hit : [];
+  };
+
+  const getPaletteFlatList = () => {
+    const q = paletteQuery.trim().toLowerCase();
+    if (q) return paletteRoutes();
+    const recentObjs = state.recentRoutes.map((id) => ROUTES.find((r) => r.id === id)).filter(Boolean);
+    const rest = ROUTES.filter((r) => !state.recentRoutes.includes(r.id));
+    return recentObjs.length ? [...recentObjs, ...rest] : ROUTES.slice();
+  };
+
+  const renderPaletteRow = (r, pos) => {
+    const selected = pos === paletteIndex;
+    return `<button type="button" class="palette__item" role="option" aria-selected="${selected}" data-route="${r.id}" data-pos="${pos}">
+      ${ICONS[r.icon] || ""}
+      <span>${escapeHtml(r.label)}</span>
+      <small>${escapeHtml(r.id)}</small>
+    </button>`;
+  };
+
+  const renderPaletteItems = () => {
+    const q = paletteQuery.trim().toLowerCase();
+    let html = "";
+    if (!q && state.recentRoutes.length) {
+      const recentObjs = state.recentRoutes.map((id) => ROUTES.find((r) => r.id === id)).filter(Boolean);
+      const rest = ROUTES.filter((r) => !state.recentRoutes.includes(r.id));
+      if (recentObjs.length) {
+        html += `<div class="palette__section" role="presentation">最近访问</div>`;
+        let pos = 0;
+        recentObjs.forEach((r) => {
+          html += renderPaletteRow(r, pos);
+          pos++;
+        });
+        html += `<div class="palette__section" role="presentation">全部模块</div>`;
+        rest.forEach((r) => {
+          html += renderPaletteRow(r, pos);
+          pos++;
+        });
+        const total = recentObjs.length + rest.length;
+        if (paletteIndex >= total) paletteIndex = 0;
+        return html;
+      }
+    }
+    const routes = q ? paletteRoutes() : ROUTES.slice();
+    if (!routes.length) {
+      return `<div class="palette__item" style="cursor:default;opacity:.65">无匹配模块，试试「销售」「库存」…</div>`;
+    }
+    if (paletteIndex >= routes.length) paletteIndex = 0;
+    return routes.map((r, pos) => renderPaletteRow(r, pos)).join("");
+  };
+
+  const renderPalette = () =>
+    `<div class="overlay ${paletteOpen ? "is-open" : ""}" id="palette-overlay" role="presentation" aria-hidden="${String(!paletteOpen)}">
+      <div class="palette" role="dialog" aria-modal="true" aria-label="命令面板">
+        <div class="palette__bar">
+          ${ICONS.search}
+          <input type="text" id="palette-input" autocomplete="off" placeholder="输入模块名称…" value="${escapeHtml(paletteQuery)}" />
+          <span class="palette__hint">Esc 关闭</span>
+        </div>
+        <div class="palette__list" id="palette-list" role="listbox" aria-label="模块列表">${renderPaletteItems()}</div>
+      </div>
+    </div>`;
+
+  const openDetailDrawer = (routeId, row) => {
+    const spec = tableSpec(routeId);
+    const title = `${spec.h[0]} · ${row.c1}`;
+    detailContext = { routeId, row };
+    detailFlowStep = 0;
+    const sheet = document.getElementById("detail-sheet");
+    const back = document.getElementById("detail-backdrop");
+    const titleEl = document.getElementById("detail-title");
+    const bodyEl = document.getElementById("detail-body");
+    if (!sheet || !back || !titleEl || !bodyEl) return;
+    titleEl.textContent = title;
+    bodyEl.innerHTML = renderDetailBodyFull();
+    sheet.classList.add("is-open");
+    sheet.setAttribute("aria-hidden", "false");
+    back.classList.add("is-open");
+    back.setAttribute("aria-hidden", "false");
+  };
+
+  const closeDetailDrawer = () => {
+    detailContext = null;
+    detailFlowStep = 0;
+    document.getElementById("detail-sheet")?.classList.remove("is-open");
+    document.getElementById("detail-backdrop")?.classList.remove("is-open");
+    document.getElementById("detail-sheet")?.setAttribute("aria-hidden", "true");
+    document.getElementById("detail-backdrop")?.setAttribute("aria-hidden", "true");
+  };
+
+  const openHelpModal = () => {
+    document.getElementById("help-modal")?.classList.add("is-open");
+    document.getElementById("help-backdrop")?.classList.add("is-open");
+    document.getElementById("help-modal")?.setAttribute("aria-hidden", "false");
+    document.getElementById("help-backdrop")?.setAttribute("aria-hidden", "false");
+  };
+
+  const closeHelpModal = () => {
+    document.getElementById("help-modal")?.classList.remove("is-open");
+    document.getElementById("help-backdrop")?.classList.remove("is-open");
+    document.getElementById("help-modal")?.setAttribute("aria-hidden", "true");
+    document.getElementById("help-backdrop")?.setAttribute("aria-hidden", "true");
+  };
+
+  const initOverlaysOnce = () => {
+    const host = document.getElementById("overlay-host");
+    if (!host || host.dataset.ready) return;
+    host.dataset.ready = "1";
+    host.innerHTML = `
+      <div id="detail-backdrop" class="detail-backdrop" aria-hidden="true"></div>
+      <aside id="detail-sheet" class="detail-sheet" aria-hidden="true" aria-labelledby="detail-title">
+        <div class="detail-sheet__head">
+          <h3 id="detail-title">详情</h3>
+          <button type="button" class="icon-btn" id="detail-close" aria-label="关闭">${ICONS.x}</button>
+        </div>
+        <div id="detail-body" class="detail-sheet__body"></div>
+      </aside>
+      <div id="help-backdrop" class="detail-backdrop help-backdrop" aria-hidden="true"></div>
+      <div id="help-modal" class="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title" aria-hidden="true">
+        <div class="help-modal__head">
+          <h3 id="help-title">快捷键</h3>
+          <button type="button" class="icon-btn" id="help-close" aria-label="关闭">${ICONS.x}</button>
+        </div>
+        <div class="help-modal__body">
+          <div class="help-shortcut"><span>打开 / 关闭命令面板</span><kbd>Ctrl</kbd> <kbd>K</kbd></div>
+          <div class="help-shortcut"><span>关闭面板 / 抽屉 / 本窗口（焦点在页面时）</span><kbd>Esc</kbd></div>
+          <div class="help-shortcut"><span>打开本帮助</span><kbd>Ctrl</kbd> <kbd>/</kbd></div>
+          <div class="help-shortcut"><span>表格行</span><span>点击或 Enter 聚焦后打开详情抽屉</span></div>
+          <div class="help-shortcut"><span>侧栏 ★</span><span>收藏模块到「收藏」分组</span></div>
+          <div class="help-shortcut"><span>顶栏「组织」</span><span>切换后 KPI 与表格种子会变化</span></div>
+          <div class="help-shortcut"><span>表格</span><span>勾选后可用「批量审核」；行内详情含模拟审批流</span></div>
+          <div class="help-shortcut"><span>表头</span><span>点击列名排序；「清除排序」恢复默认</span></div>
+          <div class="help-shortcut"><span>命令面板</span><span>空搜索时优先列出最近访问模块</span></div>
+          <div class="help-shortcut"><span>偏好</span><span>可切换表格「紧凑 / 舒适」密度</span></div>
+          <div class="help-shortcut"><span>地址栏</span><span>使用 <kbd>#/</kbd> 模块 id 直达，如 <kbd>#/inventory</kbd></span></div>
+          <div class="help-shortcut"><span>列显示</span><span>业务表工具栏可隐藏列（每表独立记忆）；导出 CSV 仅含可见列</span></div>
+          <p style="margin:14px 0 0;font-size:12px;color:var(--muted2)">数据均为静态模拟，不连接真实业务系统。</p>
         </div>
       </div>
     `;
-
-    // 计算金额/合计
-    const tbody = $("#linesTbody");
-    const rows = $$(".line-row");
-
-    function computeRowAmount(rowEl) {
-      const qtyEl = rowEl.querySelector(".line-qty");
-      const priceEl = rowEl.querySelector(".line-price");
-      const amtEl = rowEl.querySelector(".line-amt");
-      const qty = Number(qtyEl && qtyEl.value !== "" ? qtyEl.value : 0);
-      const price = Number(priceEl && priceEl.value !== "" ? priceEl.value : 0);
-      const amt = qty * price;
-      if (amtEl) amtEl.textContent = amt.toFixed(2);
-      return amt;
-    }
-
-    function computeTotals() {
-      let totalQty = 0;
-      let totalAmt = 0;
-      for (const rowEl of rows) {
-        const qtyEl = rowEl.querySelector(".line-qty");
-        const amtEl = rowEl.querySelector(".line-amt");
-        const qty = Number(qtyEl && qtyEl.value !== "" ? qtyEl.value : 0);
-        const amt = Number(amtEl ? amtEl.textContent : 0);
-        totalQty += qty;
-        totalAmt += amt;
-      }
-      $("#totalQty").textContent = String(totalQty);
-      $("#totalAmt").textContent = totalAmt.toFixed(2);
-    }
-
-    // 初次计算
-    for (const rowEl of rows) computeRowAmount(rowEl);
-    computeTotals();
-
-    tbody.addEventListener("input", (e) => {
-      const rowEl = e.target.closest(".line-row");
-      if (!rowEl) return;
-      computeRowAmount(rowEl);
-      computeTotals();
-    });
-  }
-
-  function renderOpModes(category) {
-    const meta = TILES_TYPE_META[category] || TILES_TYPE_META.generic;
-    opModeSel.innerHTML = "";
-    for (const m of meta.opModes) {
-      const opt = document.createElement("option");
-      opt.value = m;
-      opt.textContent = m;
-      opModeSel.appendChild(opt);
-    }
-    opModeSel.value = meta.opModes[meta.opModes.length - 1];
-  }
-
-  function openModalForTile(tile) {
-    modalTile = tile;
-    const category = TILE_TYPE_TO_CATEGORY[tile.type] || "generic";
-    modalTitle.textContent = tile.label;
-    modalSub.textContent = `模拟入口：类型=${tile.type} · 类别=${category}（执行后生成日志）`;
-
-    renderOpModes(category);
-    renderFormFieldsForType(tile.type, category);
-
-    btnExecute.disabled = false;
-    setModalOpen(true);
-  }
-
-  function closeModal() {
-    setModalOpen(false);
-    modalTile = null;
-    // 不清空日志
-  }
-
-  // 新建单据功能
-  function openCreateDocModal() {
-    const modal = document.getElementById('createDocModal');
-    if (modal) {
-      modal.classList.remove('hidden');
-      modal.setAttribute('aria-hidden', 'false');
-      // 设置默认日期为今天
-      const today = new Date().toISOString().split('T')[0];
-      const docDate = document.getElementById('docDate');
-      if (docDate) {
-        docDate.value = today;
-      }
-      // 生成默认单据编号
-      const docNumber = document.getElementById('docNumber');
-      if (docNumber) {
-        const moduleName = state.moduleKey === 'inventory' ? 'RK' : 
-                         state.moduleKey === 'sales' ? 'XS' : 
-                         state.moduleKey === 'procurement' ? 'CG' : 'DJ';
-        const dateStr = today.replace(/-/g, '');
-        const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-        docNumber.value = `${moduleName}${dateStr}${randomNum}`;
-      }
-    }
-  }
-
-  function closeCreateDocModal() {
-    const modal = document.getElementById('createDocModal');
-    if (modal) {
-      modal.classList.add('hidden');
-      modal.setAttribute('aria-hidden', 'true');
-    }
-  }
-
-  function addDocItem() {
-    const docItems = document.getElementById('docItems');
-    if (docItems) {
-      const newRow = document.createElement('tr');
-      newRow.innerHTML = `
-        <td><input type="text" class="line-input" placeholder="商品编码" required></td>
-        <td><input type="text" class="line-input" placeholder="商品名称" required></td>
-        <td><input type="text" class="line-input" placeholder="规格型号"></td>
-        <td><input type="number" class="line-input" placeholder="数量" step="0.01" min="0" required></td>
-        <td><input type="number" class="line-input" placeholder="单价" step="0.01" min="0" required></td>
-        <td><input type="number" class="line-input" placeholder="金额" step="0.01" min="0" readonly></td>
-        <td><button type="button" class="small-btn danger">删除</button></td>
-      `;
-      docItems.appendChild(newRow);
-      // 添加删除按钮事件
-      addDeleteItemEvents();
-      // 添加计算金额事件
-      addCalculateAmountEvents();
-    }
-  }
-
-  function addDeleteItemEvents() {
-    const deleteButtons = document.querySelectorAll('#docItems .small-btn.danger');
-    deleteButtons.forEach(button => {
-      button.addEventListener('click', function() {
-        const row = this.closest('tr');
-        if (row) {
-          row.remove();
-        }
-      });
-    });
-  }
-
-  function addCalculateAmountEvents() {
-    const quantityInputs = document.querySelectorAll('#docItems input[placeholder="数量"]');
-    const priceInputs = document.querySelectorAll('#docItems input[placeholder="单价"]');
-    
-    function calculateAmount(row) {
-      const quantityInput = row.querySelector('input[placeholder="数量"]');
-      const priceInput = row.querySelector('input[placeholder="单价"]');
-      const amountInput = row.querySelector('input[placeholder="金额"]');
-      
-      if (quantityInput && priceInput && amountInput) {
-        const quantity = parseFloat(quantityInput.value) || 0;
-        const price = parseFloat(priceInput.value) || 0;
-        const amount = quantity * price;
-        amountInput.value = amount.toFixed(2);
-      }
-    }
-    
-    quantityInputs.forEach(input => {
-      input.addEventListener('input', function() {
-        const row = this.closest('tr');
-        calculateAmount(row);
-      });
-    });
-    
-    priceInputs.forEach(input => {
-      input.addEventListener('input', function() {
-        const row = this.closest('tr');
-        calculateAmount(row);
-      });
-    });
-  }
-
-  function submitCreateDoc() {
-    // 表单验证
-    const docType = document.getElementById('docType');
-    const docDate = document.getElementById('docDate');
-    const docNumber = document.getElementById('docNumber');
-    const warehouse = document.getElementById('warehouse');
-    const docItems = document.getElementById('docItems');
-    
-    if (!docType.value) {
-      alert('请选择单据类型');
-      docType.focus();
-      return;
-    }
-    
-    if (!docDate.value) {
-      alert('请选择单据日期');
-      docDate.focus();
-      return;
-    }
-    
-    if (!docNumber.value) {
-      alert('请输入单据编号');
-      docNumber.focus();
-      return;
-    }
-    
-    if (!warehouse.value) {
-      alert('请选择仓库');
-      warehouse.focus();
-      return;
-    }
-    
-    // 验证商品明细
-    const itemRows = docItems.querySelectorAll('tr');
-    if (itemRows.length === 0) {
-      alert('请添加商品明细');
-      return;
-    }
-    
-    let hasValidItems = false;
-    itemRows.forEach(row => {
-      const codeInput = row.querySelector('input[placeholder="商品编码"]');
-      const nameInput = row.querySelector('input[placeholder="商品名称"]');
-      const quantityInput = row.querySelector('input[placeholder="数量"]');
-      const priceInput = row.querySelector('input[placeholder="单价"]');
-      
-      if (codeInput.value && nameInput.value && quantityInput.value && priceInput.value) {
-        hasValidItems = true;
-      }
-    });
-    
-    if (!hasValidItems) {
-      alert('请填写完整的商品明细');
-      return;
-    }
-    
-    // 提交确认
-    if (confirm('确定要提交单据吗？')) {
-      // 模拟提交成功
-      logLine('OK', `新建${docType.options[docType.selectedIndex].text}成功：${docNumber.value}`);
-      closeCreateDocModal();
-      
-      // 显示成功提示
-      alert('单据提交成功！');
-    }
-  }
-
-  // 导入功能
-  function openImportModal() {
-    const modal = document.getElementById('importModal');
-    if (modal) {
-      modal.classList.remove('hidden');
-      modal.setAttribute('aria-hidden', 'false');
-      // 重置表单
-      document.getElementById('importType').value = '';
-      document.getElementById('importFile').value = '';
-      document.getElementById('fileInfo').textContent = '未选择文件';
-      document.getElementById('overrideData').checked = false;
-      document.getElementById('validateData').checked = true;
-      document.getElementById('importPreview').innerHTML = '<div class="preview-placeholder">上传文件后将显示数据预览</div>';
-    }
-  }
-
-  function closeImportModal() {
-    const modal = document.getElementById('importModal');
-    if (modal) {
-      modal.classList.add('hidden');
-      modal.setAttribute('aria-hidden', 'true');
-    }
-  }
-
-  function handleFileUpload(e) {
-    const file = e.target.files[0];
-    if (file) {
-      const fileInfo = document.getElementById('fileInfo');
-      if (fileInfo) {
-        fileInfo.textContent = file.name;
-      }
-      
-      // 模拟文件预览
-      const importPreview = document.getElementById('importPreview');
-      if (importPreview) {
-        importPreview.innerHTML = `
-          <div class="preview-content">
-            <h4>文件预览</h4>
-            <p>文件名：${file.name}</p>
-            <p>文件大小：${(file.size / 1024).toFixed(2)} KB</p>
-            <p>文件类型：${file.type}</p>
-            <div class="preview-table">
-              <table class="lines-table">
-                <thead>
-                  <tr>
-                    <th>编码</th>
-                    <th>名称</th>
-                    <th>规格</th>
-                    <th>数量</th>
-                    <th>单价</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>001</td>
-                    <td>商品1</td>
-                    <td>标准</td>
-                    <td>100</td>
-                    <td>10.00</td>
-                  </tr>
-                  <tr>
-                    <td>002</td>
-                    <td>商品2</td>
-                    <td>豪华</td>
-                    <td>50</td>
-                    <td>20.00</td>
-                  </tr>
-                  <tr>
-                    <td>003</td>
-                    <td>商品3</td>
-                    <td>经济</td>
-                    <td>200</td>
-                    <td>5.00</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        `;
-      }
-    }
-  }
-
-  function submitImport() {
-    const importType = document.getElementById('importType');
-    const importFile = document.getElementById('importFile');
-    
-    if (!importType.value) {
-      alert('请选择导入类型');
-      importType.focus();
-      return;
-    }
-    
-    if (!importFile.files.length) {
-      alert('请选择要导入的文件');
-      importFile.focus();
-      return;
-    }
-    
-    // 模拟导入过程
-    logLine('INFO', `开始导入${importType.options[importType.selectedIndex].text}`);
-    
-    // 模拟导入成功
-    setTimeout(() => {
-      logLine('OK', `导入${importType.options[importType.selectedIndex].text}成功，共导入3条记录`);
-      closeImportModal();
-      alert('导入成功！');
-    }, 1500);
-  }
-
-  // 导出功能
-  function openExportModal() {
-    const modal = document.getElementById('exportModal');
-    if (modal) {
-      modal.classList.remove('hidden');
-      modal.setAttribute('aria-hidden', 'false');
-      // 重置表单
-      document.getElementById('exportType').value = '';
-      document.getElementById('exportFormat').value = '';
-      document.querySelector('input[name="exportRange"][value="all"]').checked = true;
-      document.querySelectorAll('input[name="exportField"]').forEach(checkbox => {
-        checkbox.checked = true;
-      });
-      // 生成默认文件名
-      const today = new Date().toISOString().split('T')[0];
-      const exportFilename = document.getElementById('exportFilename');
-      if (exportFilename) {
-        exportFilename.value = `${state.moduleKey}_export_${today}`;
-      }
-    }
-  }
-
-  function closeExportModal() {
-    const modal = document.getElementById('exportModal');
-    if (modal) {
-      modal.classList.add('hidden');
-      modal.setAttribute('aria-hidden', 'true');
-    }
-  }
-
-  function submitExport() {
-    const exportType = document.getElementById('exportType');
-    const exportFormat = document.getElementById('exportFormat');
-    const exportFilename = document.getElementById('exportFilename');
-    
-    if (!exportType.value) {
-      alert('请选择导出类型');
-      exportType.focus();
-      return;
-    }
-    
-    if (!exportFormat.value) {
-      alert('请选择文件格式');
-      exportFormat.focus();
-      return;
-    }
-    
-    if (!exportFilename.value) {
-      alert('请输入文件名');
-      exportFilename.focus();
-      return;
-    }
-    
-    // 获取选中的导出字段
-    const selectedFields = [];
-    document.querySelectorAll('input[name="exportField"]:checked').forEach(checkbox => {
-      selectedFields.push(checkbox.value);
-    });
-    
-    if (selectedFields.length === 0) {
-      alert('请至少选择一个导出字段');
-      return;
-    }
-    
-    // 获取导出范围
-    const exportRange = document.querySelector('input[name="exportRange"]:checked').value;
-    
-    // 模拟导出过程
-    logLine('INFO', `开始导出${exportType.options[exportType.selectedIndex].text}，格式：${exportFormat.options[exportFormat.selectedIndex].text}`);
-    
-    // 模拟导出成功
-    setTimeout(() => {
-      logLine('OK', `导出${exportType.options[exportType.selectedIndex].text}成功，文件：${exportFilename.value}.${exportFormat.value}`);
-      closeExportModal();
-      alert('导出成功！文件已下载。');
-    }, 1500);
-  }
-
-  function readModalForm() {
-    const category = TILE_TYPE_TO_CATEGORY[modalTile.type] || "generic";
-    const opMode = opModeSel.value;
-    const docNoValue = $("#docNoInput") ? $("#docNoInput").value : "OPS-" + dateKey();
-    const target = $("#targetSelect") ? $("#targetSelect").value : "-";
-    const remark = $("#remarkInput") ? $("#remarkInput").value : "";
-    const syncMode = $("#syncModeSelect") ? $("#syncModeSelect").value : undefined;
-    const mo = $("#moInput") ? $("#moInput").value : undefined;
-
-    const rows = $$(".line-row");
-    const qty = rows.reduce((sum, r) => {
-      const el = r.querySelector(".line-qty");
-      const v = Number(el && el.value !== "" ? el.value : 0);
-      return sum + v;
-    }, 0);
-
-    const totalAmt = rows.reduce((sum, r) => {
-      const el = r.querySelector(".line-amt");
-      const v = Number(el ? el.textContent : 0);
-      return sum + v;
-    }, 0);
-
-    const lineCount = rows.length;
-    const firstMat = rows[0] ? rows[0].querySelector(".line-mat")?.value : undefined;
-    const material = firstMat || "-";
-
-    return { category, opMode, docNo: docNoValue, target, material, qty, totalAmt, lineCount, remark, syncMode, mo };
-  }
-
-  function runSimulatedExecution(payload) {
-    const categoryMeta = TILES_TYPE_META[payload.category] || TILES_TYPE_META.generic;
-    const steps = categoryMeta.steps;
-
-    // 根据操作方式决定“执行到哪一步”
-    const opIdx = steps.findIndex((s) => s === payload.opMode) >= 0 ? steps.indexOf(payload.opMode) : steps.length - 1;
-
-    const simulateLevels = (s, idx) => {
-      if (payload.category === "eap" && s.includes("同步") && payload.syncMode === "full") return "WARN";
-      if (s.includes("审核") && payload.opMode === "提交审核" && idx === opIdx) return "INFO";
-      return "OK";
-    };
-
-    const lines = [];
-    for (let i = 0; i <= opIdx; i++) {
-      const s = steps[i];
-      if (s === "保存草稿") {
-        lines.push({
-          level: "OK",
-          msg: `${payload.docNo} 保存草稿成功：明细行=${payload.lineCount}，合计数量=${payload.qty}，合计金额=${payload.totalAmt.toFixed(2)}（目标/设备=${payload.target}）`,
-        });
-      } else if (s === "提交审核") {
-        lines.push({ level: "OK", msg: `${payload.docNo} 提交审核：审批流触发（备注=${payload.remark || "-" }）` });
-      } else if (s.includes("执行入库") || s.includes("执行出库")) {
-        lines.push({
-          level: "OK",
-          msg: `${payload.docNo} ${s}完成：写入库存台账/出入库明细已落库（合计金额=${payload.totalAmt.toFixed(2)}）`,
-        });
-      } else if (s.includes("执行调拨")) {
-        lines.push({ level: "OK", msg: `${payload.docNo} 调拨执行成功：在途单已更新（目标=${payload.target}，明细行=${payload.lineCount}）` });
-      } else if (s.includes("执行委外发料")) {
-        lines.push({ level: "OK", msg: `${payload.docNo} 委外发料执行完成：供应商端状态=已下发（合计数量=${payload.qty}）` });
-      } else if (s.includes("执行报工")) {
-        lines.push({ level: "OK", msg: `${payload.docNo} 报工执行成功：工单=${payload.mo || "-"} 产量=${payload.qty}（明细行=${payload.lineCount}）` });
-      } else if (s.includes("同步设备数据")) {
-        const mode = payload.syncMode || "delta";
-        lines.push({ level: mode === "full" ? "WARN" : "OK", msg: `${payload.docNo} 设备同步完成（策略=${mode}，设备=${payload.target}）` });
-      } else if (s.includes("写入库存台账")) {
-        lines.push({ level: "OK", msg: `${payload.docNo} 写入库存台账：台账版本已更新（合计数量=${payload.qty}）` });
-      } else if (s.includes("生成出库凭证")) {
-        lines.push({ level: "OK", msg: `${payload.docNo} 生成出库凭证：凭证号=AR-${Math.floor(1000 + Math.random() * 9000)}` });
-      } else if (s.includes("回写库存/结算状态")) {
-        lines.push({ level: "OK", msg: `${payload.docNo} 回写结算状态：待结算=已标记（合计金额=${payload.totalAmt.toFixed(2)}）` });
-      } else if (s.includes("回传 MES 结果/产量")) {
-        lines.push({ level: "OK", msg: `${payload.docNo} 回传结果：MES→库存看板刷新成功（产量=${payload.qty}）` });
+    document.getElementById("detail-backdrop")?.addEventListener("click", closeDetailDrawer);
+    document.getElementById("detail-close")?.addEventListener("click", closeDetailDrawer);
+    document.getElementById("help-backdrop")?.addEventListener("click", closeHelpModal);
+    document.getElementById("help-close")?.addEventListener("click", closeHelpModal);
+    document.getElementById("detail-sheet")?.addEventListener("click", (e) => {
+      const btn = e.target.closest(".js-approval-next");
+      if (!btn || btn.disabled) return;
+      e.preventDefault();
+      detailFlowStep++;
+      const bodyEl = document.getElementById("detail-body");
+      if (bodyEl) bodyEl.innerHTML = renderDetailBodyFull();
+      if (detailFlowStep >= APPROVAL_LABELS.length) {
+        const doc = detailContext?.row?.c1 || "单据";
+        pushLog(`[审批] ${doc} 模拟流程已完成（已过账）`);
+        toast("流程完成", "演示审批已推进到「过账」");
       } else {
-        // fallback: generic step message
-        lines.push({ level: simulateLevels(s, i), msg: `${payload.docNo} ${s}完成（target=${payload.target}，qty=${payload.qty}）` });
+        toast("已推进", `${APPROVAL_LABELS[detailFlowStep]} 进行中`);
       }
-    }
-
-    // 在最后补一个“对账/校验”类日志增强真实感
-    lines.push({
-      level: payload.category === "eap" ? "OK" : "INFO",
-      msg: `校验：接口幂等=OK；主数据一致性=通过（物料/编码=${payload.material}）`,
     });
+  };
 
-    return lines;
-  }
+  const replaceTableOnly = () => {
+    const wrap = document.getElementById("main-table-wrap");
+    if (wrap) wrap.outerHTML = renderTable(tableDataRouteId());
+    pruneStaleSelection();
+    refreshBatchUi();
+    requestAnimationFrame(() => syncSelectAllCheckbox());
+  };
 
-  function delay(ms) {
-    return new Promise((r) => setTimeout(r, ms));
-  }
+  const mount = () => {
+    initOverlaysOnce();
+    document.documentElement.dataset.theme = state.theme;
+    document.documentElement.dataset.tableDensity = state.tableDensity === "compact" ? "compact" : "comfortable";
+    $app.innerHTML = renderShell() + renderPalette();
+    bind();
+    const pop = document.getElementById("notif-pop");
+    const btn = document.getElementById("btn-notif");
+    if (notifOpen && pop && btn) {
+      pop.classList.add("is-open");
+      pop.setAttribute("aria-hidden", "false");
+      btn.setAttribute("aria-expanded", "true");
+    }
+    syncHashFromState();
+  };
 
-  async function executeModal() {
-    if (!modalTile) return;
-    
+  const syncHashFromState = () => {
+    const target = `#/${state.route}`;
+    if (location.hash === target) return;
     try {
-      const payload = readModalForm();
-      const startMode = payload.opMode;
-
-      // 验证数据
-      if (payload.qty <= 0) {
-        logLine("WARN", `执行失败：数量必须大于0`);
-        return;
-      }
-
-      btnExecute.disabled = true;
-      logLine("INFO", `开始执行（模拟）：${modalTile.label} · 操作方式=${startMode}`);
-
-      const lines = runSimulatedExecution(payload);
-      // 分段输出，更像“操作过程”
-      for (let i = 0; i < lines.length; i++) {
-        await delay(220 + Math.floor(Math.random() * 220));
-        logLine(lines[i].level, lines[i].msg);
-      }
-
-      state.executedCount += 1;
-      logLine("OK", `执行完成：${modalTile.label}（总执行次数=${state.executedCount}）`);
-    } catch (error) {
-      logLine("FAIL", `执行失败：${error.message || "未知错误"}`);
-    } finally {
-      btnExecute.disabled = false;
-      closeModal();
-    }
-  }
-
-  function wireEvents() {
-    // 移动端菜单按钮点击事件
-    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    const sidebar = document.querySelector('.sidebar');
-    
-    if (mobileMenuBtn && sidebar) {
-      mobileMenuBtn.addEventListener('click', () => {
-        sidebar.classList.toggle('mobile-open');
-      });
-      
-      // 点击侧边栏外部关闭侧边栏
-      document.addEventListener('click', (e) => {
-        if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target) && sidebar.classList.contains('mobile-open')) {
-          sidebar.classList.remove('mobile-open');
-        }
-      });
-    }
-    
-    // sidebar
-    $$(".side-item").forEach((item) => {
-      item.addEventListener("click", (e) => {
-        const key = item.dataset.module;
-        if (!key) return;
-        
-        // 检查模块是否存在
-        if (!MODULES[key]) {
-          logLine("WARN", `模块不存在：${key}`);
-          return;
-        }
-        
-        state.moduleKey = key;
-        
-        // 重置所有菜单项的激活状态
-        $$(".side-item").forEach((x) => x.classList.remove("active"));
-        
-        // 激活当前点击的菜单项
-        item.classList.add("active");
-        
-        // 在移动设备上点击菜单项后关闭侧边栏
-        if (window.innerWidth <= 768) {
-          sidebar.classList.remove('mobile-open');
-        }
-        
-        syncHeader();
-        renderTiles();
-
-        const mod = MODULES[state.moduleKey];
-        logLine("INFO", `切换模块：${mod ? mod.label : key}`);
-      });
-    });
-    
-    // 页面操作按钮事件
-    const createDocBtn = document.querySelector('.page-actions .btn.primary');
-    const importBtn = document.querySelectorAll('.page-actions .btn')[1];
-    const exportBtn = document.querySelectorAll('.page-actions .btn')[2];
-    
-    if (createDocBtn) {
-      createDocBtn.addEventListener('click', openCreateDocModal);
-    }
-    
-    if (importBtn) {
-      importBtn.addEventListener('click', openImportModal);
-    }
-    
-    if (exportBtn) {
-      exportBtn.addEventListener('click', openExportModal);
-    }
-    
-    // 新建单据模态框事件
-    const createDocModal = document.getElementById('createDocModal');
-    const btnCreateDocClose = document.getElementById('btnCreateDocClose');
-    const btnCreateDocCancel = document.getElementById('btnCreateDocCancel');
-    const btnCreateDocSubmit = document.getElementById('btnCreateDocSubmit');
-    const addItemBtn = document.getElementById('addItemBtn');
-    
-    if (btnCreateDocClose) {
-      btnCreateDocClose.addEventListener('click', closeCreateDocModal);
-    }
-    
-    if (btnCreateDocCancel) {
-      btnCreateDocCancel.addEventListener('click', closeCreateDocModal);
-    }
-    
-    if (btnCreateDocSubmit) {
-      btnCreateDocSubmit.addEventListener('click', submitCreateDoc);
-    }
-    
-    if (addItemBtn) {
-      addItemBtn.addEventListener('click', addDocItem);
-    }
-    
-    // 导入模态框事件
-    const importModal = document.getElementById('importModal');
-    const btnImportClose = document.getElementById('btnImportClose');
-    const btnImportCancel = document.getElementById('btnImportCancel');
-    const btnImportSubmit = document.getElementById('btnImportSubmit');
-    const importFile = document.getElementById('importFile');
-    
-    if (btnImportClose) {
-      btnImportClose.addEventListener('click', closeImportModal);
-    }
-    
-    if (btnImportCancel) {
-      btnImportCancel.addEventListener('click', closeImportModal);
-    }
-    
-    if (btnImportSubmit) {
-      btnImportSubmit.addEventListener('click', submitImport);
-    }
-    
-    if (importFile) {
-      importFile.addEventListener('change', handleFileUpload);
-    }
-    
-    // 导出模态框事件
-    const exportModal = document.getElementById('exportModal');
-    const btnExportClose = document.getElementById('btnExportClose');
-    const btnExportCancel = document.getElementById('btnExportCancel');
-    const btnExportSubmit = document.getElementById('btnExportSubmit');
-    
-    if (btnExportClose) {
-      btnExportClose.addEventListener('click', closeExportModal);
-    }
-    
-    if (btnExportCancel) {
-      btnExportCancel.addEventListener('click', closeExportModal);
-    }
-    
-    if (btnExportSubmit) {
-      btnExportSubmit.addEventListener('click', submitExport);
-    }
-    
-    // 为现有商品行添加删除按钮事件
-    addDeleteItemEvents();
-    
-    // 为数量和单价输入框添加计算金额事件
-    addCalculateAmountEvents();
-    
-    // 初始化时激活库存管理
-    const inventoryItem = $(".side-item[data-module='inventory']");
-    if (inventoryItem) {
-      inventoryItem.classList.add("active");
-    }
-    
-    // 快速发起卡片点击事件
-    $$(".quick-action-card").forEach((card) => {
-      card.addEventListener("click", () => {
-        const title = card.querySelector(".title").textContent;
-        logLine("INFO", `点击快速发起：${title}`);
-        
-        // 根据卡片标题打开对应的功能
-        let tileType = "generic";
-        if (title.includes("入库")) tileType = "inbound_other";
-        if (title.includes("出库")) tileType = "outbound_other";
-        if (title.includes("移仓")) tileType = "transfer_direct";
-        if (title.includes("调拨")) tileType = "transfer_out";
-        
-        // 模拟点击对应的功能卡片
-        const tile = { label: title, type: tileType };
-        openModalForTile(tile);
-      });
-    });
-    
-    // 待办事项卡片点击事件
-    $$(".todo-card").forEach((card) => {
-      card.addEventListener("click", () => {
-        const title = card.querySelector(".todo-title").textContent;
-        const countEl = card.querySelector(".todo-count");
-        const currentCount = parseInt(countEl.textContent) || 0;
-        
-        // 模拟标记为已完成，将数量设置为0
-        if (currentCount > 0) {
-          countEl.textContent = "0";
-          logLine("OK", `待办事项已完成：${title}`);
-        } else {
-          // 模拟重新打开待办事项
-          countEl.textContent = "1";
-          logLine("INFO", `待办事项已打开：${title}`);
-        }
-      });
-    });
-    
-    // 实时数据卡片点击事件
-    $$(".data-card").forEach((card) => {
-      card.addEventListener("click", () => {
-        const label = card.querySelector(".data-label").textContent;
-        const value = card.querySelector(".data-value")?.textContent || card.querySelector(".data-action").textContent;
-        
-        // 模拟查看详细数据
-        if (label === "经营日报") {
-          logLine("INFO", `查看经营日报详情`);
-          // 可以在这里添加打开详情页面的逻辑
-        } else {
-          // 模拟刷新数据
-          const randomValue = (Math.random() * 1000).toFixed(2);
-          const valueEl = card.querySelector(".data-value");
-          if (valueEl) {
-            valueEl.textContent = randomValue;
-          }
-          logLine("OK", `刷新实时数据：${label} = ${randomValue}`);
-        }
-      });
-    });
-    
-    // 标签页切换事件
-    $$(".tab-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const parent = btn.parentElement;
-        $$("button", parent).forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        
-        const tabName = btn.textContent;
-        logLine("INFO", `切换标签页：${tabName}`);
-      });
-    });
-
-    // search
-    const searchInput = $("#searchInput");
-    const searchDropdown = $("#searchDropdown");
-    
-    // 生成搜索结果
-    function generateSearchResults(query) {
-      const results = [];
-      const seenLabels = new Set(); // 用于去重
-      if (!query || query.trim() === "") {
-        return results;
-      }
-      
-      const normalizedQuery = query.toLowerCase().trim();
-      
-      // 遍历所有模块和功能
-      for (const [moduleKey, module] of Object.entries(MODULES)) {
-        for (const group of module.groups) {
-          for (const tile of group.tiles) {
-            const tileContent = (tile.label + " " + (tile.keywords || []).join(" ")).toLowerCase();
-            if (tileContent.includes(normalizedQuery) && !seenLabels.has(tile.label)) {
-              seenLabels.add(tile.label);
-              results.push({
-                label: tile.label,
-                module: module.label,
-                moduleKey: moduleKey,
-                tileType: tile.type
-              });
-            }
-          }
-        }
-      }
-      
-      return results;
-    }
-    
-    // 渲染搜索下拉菜单
-    function renderSearchDropdown(results) {
-      if (!results || results.length === 0) {
-        searchDropdown.classList.add("hidden");
-        return;
-      }
-      
-      searchDropdown.innerHTML = "";
-      
-      results.forEach((result) => {
-        const item = document.createElement("div");
-        item.className = "search-dropdown-item";
-        item.innerHTML = `
-          <span>${result.label}</span>
-          <span class="module">${result.module}</span>
-        `;
-        item.addEventListener("click", () => {
-          // 切换到对应的模块
-          state.moduleKey = result.moduleKey;
-          
-          // 重置所有菜单项的激活状态
-          $$(".side-item").forEach((x) => x.classList.remove("active"));
-          
-          // 激活对应的菜单项
-          const targetItem = $(`.side-item[data-module="${result.moduleKey}"]`);
-          if (targetItem) {
-            targetItem.classList.add("active");
-            
-            // 如果是子菜单项，激活父菜单项并展开子菜单
-            const parentItem = targetItem.closest(".submenu").previousElementSibling;
-            if (parentItem && parentItem.classList.contains("has-submenu")) {
-              parentItem.classList.add("active");
-              parentItem.nextElementSibling.classList.add("show");
-            }
-          }
-          
-          syncHeader();
-          renderTiles();
-          
-          // 清空搜索框并隐藏下拉菜单
-          searchInput.value = "";
-          state.search = "";
-          searchDropdown.classList.add("hidden");
-        });
-        searchDropdown.appendChild(item);
-      });
-      
-      searchDropdown.classList.remove("hidden");
-    }
-    
-    // 监听搜索输入
-    searchInput.addEventListener("input", (e) => {
+      history.replaceState(null, "", `${location.pathname}${location.search}${target}`);
+    } catch {
       try {
-        const query = e.target.value || "";
-        state.search = query;
-        
-        // 过滤后重渲染
-        renderTiles();
-        
-        // 生成并显示搜索结果
-        const results = generateSearchResults(query);
-        renderSearchDropdown(results);
-      } catch (error) {
-        logLine("WARN", `搜索过程中出错：${error.message || "未知错误"}`);
+        location.hash = target;
+      } catch {
+        /* ignore */
       }
-    });
-    
-    // 点击外部区域关闭下拉菜单
-    document.addEventListener("click", (e) => {
-      if (!searchInput.contains(e.target) && !searchDropdown.contains(e.target)) {
-        searchDropdown.classList.add("hidden");
-      }
-    });
-    
-    // 按ESC键关闭下拉菜单
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        searchDropdown.classList.add("hidden");
-      }
-    });
-
-    // modal close
-    btnCancel.addEventListener("click", closeModal);
-    btnModalClose.addEventListener("click", closeModal);
-    modalOverlay.addEventListener("click", (e) => {
-      if (e.target === modalOverlay) closeModal();
-    });
-    btnExecute.addEventListener("click", executeModal);
-
-    // console actions
-    $("#btnClearLog").addEventListener("click", clearLog);
-    $("#btnExportLog").addEventListener("click", exportLog);
-    $("#btnCopyLog").addEventListener("click", copyLog);
-
-    // hotkey
-    document.addEventListener("keydown", (e) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key || "").toLowerCase() === "k") {
-        e.preventDefault();
-        $("#searchInput").focus();
-      }
-      if (e.key === "Escape" && !modalOverlay.classList.contains("hidden")) closeModal();
-    });
-  }
-
-  function init() {
-    syncHeader();
-
-    wireEvents();
-
-    // 首次渲染
-    renderTiles();
-    logLine("INFO", "模拟台已启动：点击卡片开始演示操作流程");
-  }
-
-  function syncHeader() {
-    const mod = MODULES[state.moduleKey];
-    if (!mod) return;
-
-    $("#breadcrumbModule").textContent = mod.label;
-    
-    // 更新页面标题
-    const pageTitle = document.querySelector(".page-title h1");
-    if (pageTitle) {
-      pageTitle.textContent = mod.label;
     }
-  }
+  };
 
-  // start
-  init();
+  const bind = () => {
+    const $sidebar = document.getElementById("sidebar");
+    const $backdrop = document.getElementById("drawer-backdrop");
+    const $paletteInput = document.getElementById("palette-input");
+
+    document.getElementById("menu-toggle")?.addEventListener("click", () => {
+      sidebarOpen = !sidebarOpen;
+      $sidebar.classList.toggle("is-open", sidebarOpen);
+      $backdrop.classList.toggle("is-open", sidebarOpen);
+    });
+    $backdrop.addEventListener("click", () => {
+      sidebarOpen = false;
+      $sidebar.classList.remove("is-open");
+      $backdrop.classList.remove("is-open");
+    });
+
+    $app.querySelectorAll(".js-nav").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.route = btn.getAttribute("data-route");
+        touchRecentRoute(state.route);
+        tableFilter = "";
+        tablePage = 0;
+        clearSelection();
+        saveState(state);
+        sidebarOpen = false;
+        $sidebar?.classList.remove("is-open");
+        $backdrop?.classList.remove("is-open");
+        notifOpen = false;
+        mount();
+        toast("已切换模块", currentRoute().label);
+      });
+    });
+
+    document.getElementById("org-select")?.addEventListener("change", (e) => {
+      const v = e.target.value;
+      if (!ORGS.some((o) => o.id === v)) return;
+      state.orgId = v;
+      tablePage = 0;
+      clearSelection();
+      saveState(state);
+      mount();
+      toast("已切换组织", currentOrg().name);
+    });
+
+    document.querySelector(".js-dismiss-banner")?.addEventListener("click", () => {
+      if (!state.dismissedBanners.includes(ALERT_BANNER_ID)) {
+        state.dismissedBanners.push(ALERT_BANNER_ID);
+        saveState(state);
+      }
+      mount();
+    });
+
+    document.getElementById("batch-approve-btn")?.addEventListener("click", () => {
+      const n = selectedRowKeys.size;
+      if (!n) return;
+      pushLog(`[批量审核] 已模拟通过 ${n} 条选中单据（${currentOrg().name}）`);
+      toast("批量审核完成", `共 ${n} 条（演示）`);
+      clearSelection();
+      mount();
+    });
+
+    $app.querySelectorAll(".js-fav").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        toggleFavorite(btn.getAttribute("data-route"));
+        mount();
+      });
+    });
+
+    document.getElementById("btn-notif")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      notifOpen = !notifOpen;
+      const pop = document.getElementById("notif-pop");
+      const b = document.getElementById("btn-notif");
+      pop?.classList.toggle("is-open", notifOpen);
+      pop?.setAttribute("aria-hidden", String(!notifOpen));
+      b?.setAttribute("aria-expanded", String(notifOpen));
+    });
+
+    $app.querySelectorAll(".js-notif-item").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute("data-notif-id");
+        markNotifRead(id);
+        btn.classList.add("is-read");
+        const badge = document.getElementById("notif-badge");
+        const n = unreadNotifCount();
+        if (badge) {
+          badge.textContent = n > 0 ? String(n) : "";
+          badge.classList.toggle("is-on", n > 0);
+        }
+      });
+    });
+
+    document.getElementById("open-palette")?.addEventListener("click", openPalette);
+    document.getElementById("btn-help")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openHelpModal();
+    });
+
+    $app.querySelectorAll(".js-theme-toggle").forEach((b) =>
+      b.addEventListener("click", () => {
+        state.theme = state.theme === "dark" ? "light" : "dark";
+        saveState(state);
+        mount();
+        toast("主题已更新", state.theme === "dark" ? "深色" : "浅色");
+      })
+    );
+
+    document.querySelector(".js-reset")?.addEventListener("click", () => {
+      localStorage.removeItem(STORAGE_KEY);
+      state = {
+        theme: "dark",
+        route: "overview",
+        log: [],
+        favorites: [],
+        notifReadIds: [],
+        orgId: "hq",
+        dismissedBanners: [],
+        sortByRoute: {},
+        tableDensity: "comfortable",
+        recentRoutes: [],
+        hiddenColsByRoute: {},
+      };
+      tableFilter = "";
+      tablePage = 0;
+      notifOpen = false;
+      clearSelection();
+      mount();
+      toast("已重置", "本地演示数据已清除");
+    });
+
+    document.querySelector(".js-export-log")?.addEventListener("click", () => {
+      exportLogTxt();
+    });
+
+    $app.querySelectorAll(".js-sim").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const kind = btn.getAttribute("data-kind");
+        const route = currentRoute().label;
+        if (kind === "approve") {
+          pushLog(`[${route}] 模拟审核：已通过 3 条相关单据`);
+          toast("模拟审核完成", "已写入动态与本地日志");
+        } else if (kind === "sync") {
+          pushLog(`[${route}] 模拟同步：接口队列已清空（演示）`);
+          toast("同步完成", "MES / 中间件为占位逻辑");
+        }
+        mount();
+      });
+    });
+
+    document.querySelector(".js-export-table")?.addEventListener("click", () => {
+      exportTableCsv();
+    });
+
+    document.querySelectorAll(".js-density").forEach((b) => {
+      b.addEventListener("click", () => {
+        const d = b.getAttribute("data-density");
+        state.tableDensity = d === "compact" ? "compact" : "comfortable";
+        saveState(state);
+        mount();
+        toast("表格密度", state.tableDensity === "compact" ? "紧凑" : "舒适");
+      });
+    });
+
+    document.querySelector(".js-sort-clear")?.addEventListener("click", () => {
+      const rid = tableDataRouteId();
+      if (state.sortByRoute[rid]) delete state.sortByRoute[rid];
+      saveState(state);
+      tablePage = 0;
+      clearSelection();
+      replaceTableOnly();
+      toast("已清除排序", "恢复默认顺序");
+    });
+
+    document.getElementById("col-vis-details")?.addEventListener("change", (e) => {
+      const t = e.target;
+      if (!t.classList.contains("js-col-vis")) return;
+      const rid = tableDataRouteId();
+      const col = t.getAttribute("data-col");
+      const full = tableSpec(rid).keys;
+      const hidden = new Set(state.hiddenColsByRoute[rid] || []);
+      if (t.checked) hidden.delete(col);
+      else hidden.add(col);
+      const visibleCount = full.filter((k) => !hidden.has(k)).length;
+      if (visibleCount === 0) {
+        t.checked = true;
+        hidden.delete(col);
+        toast("至少保留一列", "无法全部隐藏");
+        return;
+      }
+      state.hiddenColsByRoute[rid] = Array.from(hidden);
+      if (state.hiddenColsByRoute[rid].length === 0) delete state.hiddenColsByRoute[rid];
+      saveState(state);
+      tablePage = 0;
+      clearSelection();
+      mount();
+      toast("列显示已更新", "导出 CSV 将同步可见列");
+    });
+
+    document.querySelector(".js-copy-tl")?.addEventListener("click", () => {
+      copyTimelineText();
+    });
+
+    document.querySelector(".js-refresh")?.addEventListener("click", () => {
+      tableFilter = document.querySelector(".js-table-filter")?.value || tableFilter;
+      tablePage = 0;
+      clearSelection();
+      mount();
+      toast("数据已刷新", "使用当日种子重新生成");
+    });
+
+    document.querySelector(".js-table-filter")?.addEventListener("input", (e) => {
+      tableFilter = e.target.value;
+      tablePage = 0;
+      clearSelection();
+      replaceTableOnly();
+    });
+
+    if (paletteOpen) {
+      bindPaletteInteractions();
+      requestAnimationFrame(() => $paletteInput?.focus());
+    }
+
+    requestAnimationFrame(() => {
+      refreshBatchUi();
+      syncSelectAllCheckbox();
+    });
+  };
+
+  const bindPaletteInteractions = () => {
+    const $paletteOverlay = document.getElementById("palette-overlay");
+    const $paletteInput = document.getElementById("palette-input");
+    const $list = document.getElementById("palette-list");
+
+    $paletteOverlay?.addEventListener("click", (e) => {
+      if (e.target === $paletteOverlay) closePalette();
+    });
+    $paletteInput?.addEventListener("input", (e) => {
+      paletteQuery = e.target.value;
+      paletteIndex = 0;
+      if ($list) $list.innerHTML = renderPaletteItems();
+      wirePaletteItems();
+    });
+    $paletteInput?.addEventListener("keydown", onPaletteKeydown);
+    wirePaletteItems();
+  };
+
+  const wirePaletteItems = () => {
+    document.querySelectorAll("#palette-list .palette__item[data-route]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.route = btn.getAttribute("data-route");
+        touchRecentRoute(state.route);
+        tableFilter = "";
+        tablePage = 0;
+        clearSelection();
+        saveState(state);
+        closePalette();
+        toast("已跳转", currentRoute().label);
+      });
+    });
+  };
+
+  const openPalette = () => {
+    paletteOpen = true;
+    paletteQuery = "";
+    paletteIndex = 0;
+    mount();
+  };
+
+  const closePalette = () => {
+    if (!paletteOpen) return;
+    paletteOpen = false;
+    paletteQuery = "";
+    paletteIndex = 0;
+    mount();
+  };
+
+  const onPaletteKeydown = (e) => {
+    const list = getPaletteFlatList();
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closePalette();
+      return;
+    }
+    if (!list.length) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      paletteIndex = Math.min(paletteIndex + 1, list.length - 1);
+      syncPaletteSelection();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      paletteIndex = Math.max(paletteIndex - 1, 0);
+      syncPaletteSelection();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const r = list[paletteIndex];
+      if (r) {
+        state.route = r.id;
+        tableFilter = "";
+        tablePage = 0;
+        clearSelection();
+        touchRecentRoute(r.id);
+        saveState(state);
+        closePalette();
+        toast("已跳转", r.label);
+      }
+    }
+  };
+
+  const syncPaletteSelection = () => {
+    const list = getPaletteFlatList();
+    if (paletteIndex >= list.length) paletteIndex = Math.max(list.length - 1, 0);
+    const btns = Array.from(document.querySelectorAll("#palette-list .palette__item[data-route]"));
+    btns.forEach((b, i) => b.setAttribute("aria-selected", String(i === paletteIndex)));
+  };
+
+  document.body.addEventListener("change", (e) => {
+    const t = e.target;
+    if (!t.closest("#main-table-wrap")) return;
+    if (t.classList.contains("js-select-all")) {
+      const checked = t.checked;
+      const rid = tableDataRouteId();
+      const rows = getFilteredTableRows(rid);
+      const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+      const safePage = Math.min(tablePage, totalPages - 1);
+      const start = safePage * PAGE_SIZE;
+      const pageRows = rows.slice(start, start + PAGE_SIZE);
+      pageRows.forEach((r) => {
+        if (checked) selectedRowKeys.add(r.rowKey);
+        else selectedRowKeys.delete(r.rowKey);
+      });
+      pageRows.forEach((r) => {
+        const cb = document.querySelector(`#main-table-wrap .js-row-check[data-row-key="${r.rowKey}"]`);
+        if (cb) cb.checked = checked;
+      });
+      refreshBatchUi();
+      syncSelectAllCheckbox();
+      return;
+    }
+    if (t.classList.contains("js-row-check")) {
+      const key = t.getAttribute("data-row-key");
+      if (t.checked) selectedRowKeys.add(key);
+      else selectedRowKeys.delete(key);
+      refreshBatchUi();
+      syncSelectAllCheckbox();
+    }
+  });
+
+  document.body.addEventListener("click", (e) => {
+    const wrap = document.getElementById("main-table-wrap");
+    if (wrap?.contains(e.target) && e.target.closest(".js-sort-col")) {
+      const btn = e.target.closest(".js-sort-col");
+      const col = btn.getAttribute("data-col");
+      const rid = tableDataRouteId();
+      const cur = state.sortByRoute[rid];
+      let dir = "asc";
+      if (cur && cur.key === col) dir = cur.dir === "asc" ? "desc" : "asc";
+      state.sortByRoute[rid] = { key: col, dir };
+      saveState(state);
+      tablePage = 0;
+      clearSelection();
+      replaceTableOnly();
+      return;
+    }
+    if (wrap?.contains(e.target) && e.target.closest(".js-page-prev")) {
+      if (tablePage > 0) {
+        tablePage--;
+        replaceTableOnly();
+      }
+      return;
+    }
+    if (wrap?.contains(e.target) && e.target.closest(".js-page-next")) {
+      const rid = tableDataRouteId();
+      const rows = getFilteredTableRows(rid);
+      const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+      if (tablePage < totalPages - 1) {
+        tablePage++;
+        replaceTableOnly();
+      }
+      return;
+    }
+    if (notifOpen && !e.target.closest("#notif-wrap")) {
+      notifOpen = false;
+      document.getElementById("notif-pop")?.classList.remove("is-open");
+      document.getElementById("notif-pop")?.setAttribute("aria-hidden", "true");
+      document.getElementById("btn-notif")?.setAttribute("aria-expanded", "false");
+    }
+  });
+
+  document.body.addEventListener("click", (e) => {
+    if (e.target.closest("input, .col-check, label, button")) return;
+    const tr = e.target.closest("tr[data-row-key]");
+    if (!tr || !document.getElementById("main-table-wrap")?.contains(tr)) return;
+    const key = tr.getAttribute("data-row-key");
+    const data = lastRowLookup.get(key);
+    if (data) openDetailDrawer(data.routeId, data.row);
+  });
+
+  document.body.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" || e.target.closest("button,a,input,textarea,select")) return;
+    const tr = e.target.closest("tr[data-row-key]");
+    if (!tr || !document.getElementById("main-table-wrap")?.contains(tr)) return;
+    const key = tr.getAttribute("data-row-key");
+    const data = lastRowLookup.get(key);
+    if (data) {
+      e.preventDefault();
+      openDetailDrawer(data.routeId, data.row);
+    }
+  });
+
+  window.addEventListener("hashchange", () => {
+    const id = parseHashRoute();
+    if (!id || id === state.route) return;
+    state.route = id;
+    touchRecentRoute(id);
+    tableFilter = "";
+    tablePage = 0;
+    clearSelection();
+    saveState(state);
+    mount();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      if (paletteOpen) closePalette();
+      else openPalette();
+      return;
+    }
+    if (mod && e.key === "/") {
+      e.preventDefault();
+      openHelpModal();
+      return;
+    }
+    if (e.key === "Escape") {
+      if (paletteOpen) return;
+      if (document.getElementById("help-modal")?.classList.contains("is-open")) {
+        closeHelpModal();
+        e.preventDefault();
+        return;
+      }
+      if (document.getElementById("detail-sheet")?.classList.contains("is-open")) {
+        closeDetailDrawer();
+        e.preventDefault();
+        return;
+      }
+      if (notifOpen) {
+        notifOpen = false;
+        document.getElementById("notif-pop")?.classList.remove("is-open");
+        document.getElementById("notif-pop")?.setAttribute("aria-hidden", "true");
+        document.getElementById("btn-notif")?.setAttribute("aria-expanded", "false");
+      }
+    }
+  });
+
+  mount();
 })();
